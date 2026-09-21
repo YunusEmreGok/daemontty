@@ -43,7 +43,7 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 > ```
 > Windows'ta SmartScreen uyarısı çıkarsa **Ek bilgi → Yine de çalıştır**.
 
-**Güncellemeler.** Uygulama hiçbir şeyi kendiliğinden indirmez. Yeni sürüm çıkınca sorar; "şimdi değil" derseniz üst çubukta **Yeni sürüm mevcut** düğmesi kalır. Onay verdiğinizde Windows ve Linux (AppImage) sürümleri güncellemeyi indirip yeniden başlatırken kurar; macOS ve `.deb` kurulumlarında indirme sayfası açılır. İstediğiniz an **Ayarlar → Hakkında → Güncellemeleri denetle**.
+**Güncellemeler.** Uygulama hiçbir şeyi kendiliğinden indirmez. Yeni sürüm çıkınca sorar; "şimdi değil" derseniz üst çubukta **Yeni sürüm mevcut** düğmesi kalır. Onay verdiğinizde güncelleme indirilir, sha512 özetiyle doğrulanır ve yeniden başlatırken kurulur (macOS, Windows ve Linux AppImage). Yalnızca `.deb` kurulumunda indirme sayfası açılır. İstediğiniz an **Ayarlar → Hakkında → Güncellemeleri denetle**.
 
 ## Özellikler
 
