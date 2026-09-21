@@ -743,8 +743,8 @@ function AboutSettings() {
                   <Icon name="refresh" /> Yeniden başlat ve güncelle
                 </button>
               ) : update.status === 'available' ? (
-                <button className="btn btn-primary" onClick={() => api.update.openDownload()}>
-                  İndirme sayfasını aç
+                <button className="btn btn-primary" onClick={() => api.update.download()}>
+                  <Icon name="download" /> {update.manual ? 'İndirme sayfasını aç' : 'Güncelle'}
                 </button>
               ) : (
                 <button className="btn" disabled={update.status === 'checking' || update.status === 'downloading'} onClick={() => api.update.check()}>

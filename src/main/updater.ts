@@ -4,9 +4,10 @@ import path from 'path'
 import { autoUpdater } from 'electron-updater'
 import { UpdateState } from '@shared/types'
 
-// Güncellemeler GitHub Releases'tan gelir. Windows ve Linux (AppImage) kendini günceller.
-// macOS'ta Squirrel imzalı uygulama ister; imzasız sürümde yalnızca haber verip indirme
-// sayfasını açarız. deb kurulumu da paket yöneticisine ait olduğundan elle güncellenir.
+// Güncellemeler GitHub Releases'tan gelir. Hiçbir şey kendiliğinden indirilmez: yeni sürüm
+// bulununca kullanıcıya sorulur. Windows ve Linux (AppImage) onaydan sonra kendini günceller.
+// macOS'ta Squirrel imzalı uygulama ister; imzasız sürümde indirme sayfasını açarız.
+// deb kurulumu da paket yöneticisine ait olduğundan elle güncellenir.
 const selfInstall = process.platform === 'win32' || (process.platform === 'linux' && !!process.env.APPIMAGE)
 
 const FIRST_CHECK_MS = 10_000
@@ -31,21 +32,31 @@ function releasesUrl(): string | null {
   }
 }
 
+function download(): void {
+  if (state.status !== 'available') return
+  if (state.manual) {
+    const url = releasesUrl()
+    if (url) shell.openExternal(url)
+    return
+  }
+  setState({ status: 'downloading', version: state.version, percent: 0 })
+  autoUpdater.downloadUpdate().catch(() => {}) // hata 'error' olayıyla bildirilir
+}
+
 function check(): void {
   if (!app.isPackaged) return setState({ status: 'error', message: 'Güncelleme denetimi yalnızca kurulu sürümde çalışır' })
-  if (state.status === 'checking' || state.status === 'downloading' || state.status === 'ready') return
+  // Bulunmuş ya da inmekte olan sürümün durumunu yeni bir denetimle ezme.
+  if (state.status !== 'idle' && state.status !== 'current' && state.status !== 'error') return
   setState({ status: 'checking' })
   autoUpdater.checkForUpdates().catch(() => {}) // hata 'error' olayıyla bildirilir
 }
 
 export function registerUpdateIpc(): void {
-  autoUpdater.autoDownload = selfInstall
-  autoUpdater.autoInstallOnAppQuit = selfInstall
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = true // yalnızca kullanıcının indirdiği sürüm için geçerli
 
   autoUpdater.on('update-not-available', () => setState({ status: 'current' }))
-  autoUpdater.on('update-available', (info) =>
-    setState(selfInstall ? { status: 'downloading', version: info.version, percent: 0 } : { status: 'available', version: info.version })
-  )
+  autoUpdater.on('update-available', (info) => setState({ status: 'available', version: info.version, manual: !selfInstall }))
   autoUpdater.on('download-progress', (p) => {
     if (state.status === 'downloading') setState({ ...state, percent: Math.round(p.percent) })
   })
@@ -56,10 +67,11 @@ export function registerUpdateIpc(): void {
   ipcMain.handle('update:state', () => state)
   ipcMain.on('update:check', check)
   ipcMain.on('update:install', () => state.status === 'ready' && autoUpdater.quitAndInstall())
-  ipcMain.on('update:openDownload', () => {
-    const url = releasesUrl()
-    if (url) shell.openExternal(url)
-  })
+  ipcMain.on('update:download', download)
+
+  // Geliştirmede arayüzü denemek için: DAEMONTTY_FAKE_UPDATE=9.9.9 npm run dev
+  const fake = !app.isPackaged && process.env.DAEMONTTY_FAKE_UPDATE
+  if (fake) setTimeout(() => setState({ status: 'available', version: fake, manual: true }), 1500)
 
   if (app.isPackaged) {
     setTimeout(check, FIRST_CHECK_MS)

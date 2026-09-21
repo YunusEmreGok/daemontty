@@ -271,8 +271,8 @@ export type SessionEvent =
 /** Uygulama güncellemesinin durumu (GitHub Releases) */
 export type UpdateState =
   | { status: 'idle' | 'checking' | 'current' }
-  /** Yeni sürüm var ama bu platformda elle indirilmeli (imzasız macOS, deb) */
-  | { status: 'available'; version: string }
+  /** Yeni sürüm var; kullanıcı isteyene kadar indirilmez. manual: bu platformda elle kurulur (imzasız macOS, deb) */
+  | { status: 'available'; version: string; manual: boolean }
   | { status: 'downloading'; version: string; percent: number }
   /** İndirildi; yeniden başlatınca ya da çıkışta kurulur */
   | { status: 'ready'; version: string }
@@ -284,9 +284,10 @@ export interface Api {
     version(): Promise<string>
     state(): Promise<UpdateState>
     check(): void
+    /** Bulunan sürümü indirir; elle kurulan platformlarda indirme sayfasını açar. */
+    download(): void
     /** İndirilen güncellemeyi kurmak için uygulamayı yeniden başlatır. */
     install(): void
-    openDownload(): void
     onState(cb: (s: UpdateState) => void): () => void
   }
   vault: {

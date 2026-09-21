@@ -62,18 +62,23 @@ export default function App() {
   // Yeni sürüm hazır olunca bir kez sor; yeniden başlatmak açık oturumları kapatacağı için onay şart.
   useEffect(() => {
     if (update.status !== 'ready' && update.status !== 'available') return
-    if (promptedUpdate.current === update.version) return
-    promptedUpdate.current = update.version
+    // Her aşama (bulundu / indirildi) sürüm başına bir kez sorulur.
+    const key = `${update.status}:${update.version}`
+    if (promptedUpdate.current === key) return
+    promptedUpdate.current = key
     if (update.status === 'ready') {
       ui.confirm(
-        `Daemontty ${update.version} hazır`,
-        'Güncelleme indirildi. Yeniden başlatınca kurulur; açık oturumlar kapanır. Şimdi değilse uygulamadan çıkarken kurulacak.',
+        `Daemontty ${update.version} indirildi`,
+        'Yeniden başlatınca kurulur; açık oturumlar kapanır. Şimdi değilse uygulamadan çıkarken kurulacak.',
         { confirmLabel: 'Yeniden başlat' }
       ).then((ok) => ok && api.update.install())
     } else {
-      ui.confirm(`Daemontty ${update.version} yayınlandı`, 'Bu platformda güncelleme elle kurulur. İndirme sayfası açılsın mı?', {
-        confirmLabel: 'İndirme sayfasını aç'
-      }).then((ok) => ok && api.update.openDownload())
+      // Hayır denirse üst çubuktaki "Yeni sürüm mevcut" düğmesi kalır.
+      ui.confirm(
+        `Yeni sürüm var: Daemontty ${update.version}`,
+        update.manual ? 'Bu platformda güncelleme elle kurulur. İndirme sayfası açılsın mı?' : 'Şimdi indirilsin mi? Açık oturumlarınız indirme sırasında etkilenmez.',
+        { confirmLabel: update.manual ? 'İndirme sayfasını aç' : 'Güncelle' }
+      ).then((ok) => ok && api.update.download())
     }
   }, [update, ui])
 
@@ -207,6 +212,21 @@ export default function App() {
             <DaemonttyLogo size={16} />
             <span>Sunucular</span>
           </button>
+          {update.status === 'available' && (
+            <button className="update-pill" onClick={() => api.update.download()} title={`Daemontty ${update.version} — ${update.manual ? 'indirme sayfasını aç' : 'indir ve güncelle'}`}>
+              <Icon name="download" size={13} /> Yeni sürüm mevcut
+            </button>
+          )}
+          {update.status === 'downloading' && (
+            <span className="update-pill update-pill-busy">
+              <Icon name="download" size={13} /> İndiriliyor %{update.percent}
+            </span>
+          )}
+          {update.status === 'ready' && (
+            <button className="update-pill" onClick={() => api.update.install()} title="Açık oturumlar kapanır">
+              <Icon name="refresh" size={13} /> Yeniden başlat ve güncelle
+            </button>
+          )}
           <button className="palette-trigger" onClick={() => setPalette(true)} title="Komut paleti">
             <Icon name="search" size={13} />
             <span>Ara ya da bağlan…</span>

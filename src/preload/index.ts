@@ -16,8 +16,8 @@ const api: Api = {
     version: () => invoke('update:version'),
     state: () => invoke('update:state'),
     check: () => send('update:check'),
+    download: () => send('update:download'),
     install: () => send('update:install'),
-    openDownload: () => send('update:openDownload'),
     onState: (cb) => on('update:state', cb)
   },
   vault: {
