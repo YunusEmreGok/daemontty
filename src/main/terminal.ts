@@ -1,7 +1,11 @@
 import { ipcMain, WebContents } from 'electron'
 import { posix } from 'path'
 import { ClientChannel, SFTPWrapper } from 'ssh2'
-import { DirListing, ServerStats, SessionEvent } from '@shared/types'
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
+import type { IPty } from 'node-pty'
+import { DirListing, LOCAL_HOST_ID, ServerStats, SessionEvent } from '@shared/types'
 import { connect, Connection } from './connection'
 import { addHistory, clearHistory, getHistory, historyCount } from './vault'
 import { openSessionLog, SessionLog } from './sessionlog'
@@ -9,6 +13,8 @@ import { openSessionLog, SessionLog } from './sessionlog'
 interface Session {
   conn?: Connection
   stream?: ClientChannel
+  /** Yerel terminal (SSH yerine bu bilgisayarda kabuk) */
+  pty?: IPty
   closed: boolean
   log?: SessionLog | null
   /** Yol tamamlama için aynı bağlantı üzerinde tembel açılan SFTP kanalı */
@@ -21,11 +27,47 @@ function emit(wc: WebContents, id: string, ev: SessionEvent): void {
   if (!wc.isDestroyed()) wc.send('ssh:event', id, ev)
 }
 
+/** Bu bilgisayarda kullanıcının kabuğunu açar. node-pty yerel modüldür; yüklenemezse yalnızca bu özellik çalışmaz. */
+async function openLocal(wc: WebContents, id: string, session: Session, cols: number, rows: number): Promise<void> {
+  const { spawn } = await import('node-pty')
+  if (process.platform !== 'win32') {
+    // npm, hazır derlenmiş spawn-helper'ın çalıştırma iznini düşürebiliyor ("posix_spawnp failed").
+    try {
+      const dir = path.join(path.dirname(require.resolve('node-pty/package.json')), 'prebuilds', `${process.platform}-${process.arch}`)
+      fs.chmodSync(path.join(dir.replace('app.asar', 'app.asar.unpacked'), 'spawn-helper'), 0o755)
+    } catch {
+      /* kaynak koddan derlenmiş kurulumda bu dosya yoktur */
+    }
+  }
+  const win = process.platform === 'win32'
+  const shell = win ? process.env.COMSPEC || 'powershell.exe' : process.env.SHELL || '/bin/zsh'
+  const env = { ...process.env, TERM: 'xterm-256color', COLORTERM: 'truecolor' } as Record<string, string>
+  delete env.ELECTRON_RUN_AS_NODE
+  env.LANG ||= 'en_US.UTF-8' // Finder'dan açılınca LANG boş gelir; Türkçe karakterler bozulmasın
+  // Giriş kabuğu (-l): Finder'dan açılan uygulamada PATH eksik olur, profil dosyaları onu tamamlar.
+  const pty = spawn(shell, win ? [] : ['-l'], { name: 'xterm-256color', cols, rows, cwd: os.homedir(), env })
+  if (session.closed) return pty.kill()
+  session.pty = pty
+  session.log = openSessionLog('Yerel terminal')
+  pty.onData((d) => {
+    const buf = Buffer.from(d, 'utf8')
+    if (!wc.isDestroyed()) wc.send('ssh:data', id, buf)
+    session.log?.write(buf)
+  })
+  pty.onExit(() => {
+    if (session.closed) return
+    emit(wc, id, { type: 'closed', reason: 'exit', message: 'Oturum kapandı' })
+    close(id)
+  })
+  emit(wc, id, { type: 'ready' })
+}
+
 async function open(wc: WebContents, id: string, hostId: string, cols: number, rows: number): Promise<void> {
   close(id)
   const session: Session = { closed: false }
   sessions.set(id, session)
   try {
+    if (hostId === LOCAL_HOST_ID) return await openLocal(wc, id, session, cols, rows)
     const conn = await connect(hostId, (m) => emit(wc, id, { type: 'status', message: m }))
     if (session.closed) return conn.dispose()
     session.conn = conn
@@ -84,6 +126,7 @@ function close(id: string): void {
   sessions.delete(id)
   s.stream?.end()
   s.conn?.dispose()
+  s.pty?.kill()
   s.log?.close()
 }
 
@@ -182,10 +225,16 @@ export function registerTerminalIpc(): void {
   ipcMain.handle('ssh:open', (e, id: string, hostId: string, cols: number, rows: number) =>
     open(e.sender, id, hostId, cols, rows)
   )
-  ipcMain.on('ssh:write', (_e, id: string, data: string) => sessions.get(id)?.stream?.write(data))
-  ipcMain.on('ssh:resize', (_e, id: string, cols: number, rows: number) =>
-    sessions.get(id)?.stream?.setWindow(rows, cols, 0, 0)
-  )
+  ipcMain.on('ssh:write', (_e, id: string, data: string) => {
+    const s = sessions.get(id)
+    if (s?.pty) s.pty.write(data)
+    else s?.stream?.write(data)
+  })
+  ipcMain.on('ssh:resize', (_e, id: string, cols: number, rows: number) => {
+    const s = sessions.get(id)
+    if (s?.pty) s.pty.resize(Math.max(cols, 1), Math.max(rows, 1))
+    else s?.stream?.setWindow(rows, cols, 0, 0)
+  })
   ipcMain.on('ssh:close', (_e, id: string) => close(id))
   ipcMain.handle('ssh:listDir', (_e, id: string, dir: string) => listDir(id, dir))
   ipcMain.handle('ssh:stats', (_e, id: string) => stats(id))

@@ -27,6 +27,9 @@ export interface Host {
   agentForward?: boolean
 }
 
+/** Yerel terminal sekmelerinin host kimliği (gerçek bir host değildir). */
+export const LOCAL_HOST_ID = 'local'
+
 export type KeyType = 'ed25519' | 'rsa' | 'ecdsa'
 
 export interface SshKey {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ServerStats } from '@shared/types'
+import { LOCAL_HOST_ID } from '@shared/types'
 import { api, colorFor, formatSize, isMac, uid } from '../api'
 import { Tab, useApp } from '../App'
 import { fillSnippet, registerTab, runInTab } from '../sessions'
@@ -91,7 +92,7 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
     live.current.panes.forEach((p) => p.id !== from && api.ssh.write(p.id, d))
   }
 
-  const stats = useServerStats(focused.id, visible && state === 'ready' && settings.showServerStats)
+  const stats = useServerStats(focused.id, visible && state === 'ready' && settings.showServerStats && focused.hostId !== LOCAL_HOST_ID)
 
   const runSnippet = async (s: { name: string; command: string }): Promise<void> => {
     setMenu(null)
@@ -132,6 +133,7 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
             <Icon name="broadcast" size={13} /> {broadcast ? 'Tümüne yazılıyor' : 'Tümüne yaz'}
           </button>
         )}
+        {focused.hostId !== LOCAL_HOST_ID && (
         <button
           className={`bar-btn ${services ? 'bar-btn-on' : ''}`}
           onClick={() => setServices((v) => !v)}
@@ -140,6 +142,7 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
         >
           <Icon name="zap" size={13} /> Servisler
         </button>
+        )}
         <div className="menu-anchor">
           <button className="bar-btn" onClick={() => setMenu(menu === 'split' ? null : 'split')} title="Ekranı böl">
             <Icon name="split" size={13} /> Böl
@@ -233,7 +236,7 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
           />
         ))}
       </div>
-      {services && visible && state === 'ready' && (
+      {services && visible && state === 'ready' && focused.hostId !== LOCAL_HOST_ID && (
         <ServicesPanel sessionId={focused.id} hostLabel={host?.label ?? tab.title} onClose={() => setServices(false)} />
       )}
       </div>

@@ -4,6 +4,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { SearchAddon } from '@xterm/addon-search'
 import { WebglAddon } from '@xterm/addon-webgl'
+import { LOCAL_HOST_ID } from '@shared/types'
 import { api, colorFor, isMac, subscribeSession } from '../api'
 import { useApp } from '../App'
 import { ensureFont, themeForHost, toXterm } from '../themes'
@@ -396,7 +397,7 @@ export function TerminalPane(p: Props) {
         <div className="pane-head">
           <span className={`dot dot-${conn.status}`} />
           <span className="pane-head-dot" style={{ background: colorFor(p.hostId) }} />
-          <span className="pane-head-title">{host?.label ?? 'Sunucu'}</span>
+          <span className="pane-head-title">{host?.label ?? (p.hostId === LOCAL_HOST_ID ? 'Yerel terminal' : 'Sunucu')}</span>
           {p.broadcast && <span className="pane-badge">YAYIN</span>}
           <div className="spacer" />
           <button className="icon-btn" title="Paneli kapat" onClick={p.onClosePane}>

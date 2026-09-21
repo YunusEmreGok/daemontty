@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Host } from '@shared/types'
+import { LOCAL_HOST_ID } from '@shared/types'
 import { api, colorFor, errMsg, uid } from '../api'
 import type { Tab } from '../App'
 import { useApp } from '../App'
@@ -68,6 +69,7 @@ export function CommandPalette({ onClose, setView, activeTab }: Props) {
     for (const h of data.hosts) {
       list.push({ id: 'sftp-' + h.id, title: `SFTP: ${h.label}`, subtitle: addr(h), group: 'Dosyalar', icon: 'folder', run: () => openTab('sftp', h.id) })
     }
+    list.push({ id: 'local', title: 'Yerel terminal', subtitle: 'bu bilgisayarda kabuk aç', group: 'Bağlan', icon: 'terminal', run: () => openTab('terminal', LOCAL_HOST_ID, 'Yerel terminal') })
     if (activeTab?.kind === 'terminal') {
       for (const s of data.snippets) {
         list.push({

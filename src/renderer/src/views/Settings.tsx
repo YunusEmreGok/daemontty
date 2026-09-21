@@ -764,6 +764,7 @@ function Shortcuts() {
   // Her satır: alternatif tuş kombinasyonları ve açıklama.
   const rows: Array<[string[][], string]> = [
     [[mac ? ['⌘', 'K'] : ['Ctrl', 'Shift', 'K']], 'Komut paleti (bağlan, çalıştır, git)'],
+    [[mac ? ['⌘', 'T'] : ['Ctrl', 'Shift', 'T']], 'Yerel terminal aç'],
     [[mac ? ['⌘', 'F'] : ['Ctrl', 'Shift', 'F']], 'Terminalde ara'],
     [[mac ? ['⌘', 'D'] : ['Ctrl', 'Shift', 'D']], 'Ekranı sağa böl'],
     ...(mac ? ([[[['⌘', '⇧', 'D']], 'Ekranı aşağı böl']] as Array<[string[][], string]>) : []),

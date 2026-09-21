@@ -47,13 +47,23 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 
 ## Özellikler
 
+### Servis paneli
+Daemontty adını buradan alır: bağlı olduğunuz sunucunun **systemd servisleri** ve **Docker kapsayıcıları** terminalin yanında, tek panelde.
+- Çalışan / durmuş / hatalı durumları canlı görün; hatalılar en üstte.
+- Tek tıkla **başlat, durdur, yeniden başlat**. Yetki gerekiyorsa sudo parolası sorulur; parola kaydedilmez, oturum kapanana kadar yalnızca bellekte tutulur.
+- **Canlı günlük:** `journalctl -f` ve `docker logs -f` çıktısı panelin içinde akar.
+- Ayrı bağlantı açmaz; terminal oturumunuzun bağlantısını kullanır.
+
 ### Terminal
+- **Yerel terminal** (`⌘T` / `Ctrl+Shift+T`): sunucuya bağlanmadan kendi bilgisayarınızda kabuk açın; başka bir terminal uygulamasına gerek kalmaz.
 - **GPU hızlandırmalı** çizim (WebGL); yoğun log akışında bile akıcı. Yalnızca görünen sekmeler GPU belleği kullanır.
 - **Bölünmüş ekran:** bir sekmede 4 panele kadar, isterseniz her panelde farklı sunucu.
 - **Tümüne yaz:** yazdığınız her tuş bütün panellere aynı anda gider — on sunucuda aynı komutu tek seferde çalıştırın.
 - **Akıllı otomatik tamamlama:** komut geçmişinizden, snippet'lerinizden ve sunucudaki gerçek dosya yollarından öneri; yanlış yazılan komutlar için "bunu mu demek istediniz?".
 - **Otomatik yeniden bağlanma:** bağlantı koparsa artan aralıklarla dener, internet geri gelince beklemeden bağlanır.
 - **Canlı sunucu durumu:** terminal çubuğunda CPU, RAM, disk ve sistem yükü.
+- **Oturum kaydı:** isterseniz terminal çıktısı sunucu başına klasörlere düz metin olarak yazılır.
+- Sekmeleri sürükleyerek sıralama, sabitleme, çoğaltma.
 - Terminal içi arama, tıklanabilir bağlantılar, seçince kopyalama, tam UTF-8 / Türkçe karakter desteği.
 
 ### Host yönetimi
@@ -68,6 +78,7 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 ### SFTP dosya yöneticisi
 - Çift panel; her panelin kaynağı seçilebilir: bu bilgisayar ya da herhangi bir sunucu.
 - **Sunucudan sunucuya** doğrudan kopyalama.
+- **Yerinde düzenleme:** dosyaya çift tıklayın, yerleşik düzenleyicide açılsın; `⌘S` / `Ctrl+S` ile sunucuya kaydedin. Dosya bu arada başkası tarafından değiştiyse üzerine yazmadan önce sorar.
 - Sürükle-bırak yükleme, klasörleriyle indirme, canlı aktarım ilerlemesi.
 
 ### Anahtarlar ve kimlikler
@@ -76,8 +87,12 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 - `ssh-agent` ve `~/.ssh/id_*` anahtarlarını otomatik dener.
 - Bilinen sunucular (parmak izi) listesi ve yönetimi.
 
+### Snippet'ler
+- **Parametreli:** `systemctl restart {{servis}}` yazın, çalıştırırken sorulsun; `{{satır:100}}` ile varsayılan değer verin.
+- Bir snippet'i açık terminallerde ya da **bir grubun tüm sunucularında** tek seferde çalıştırın; bağlı olmayanlar için sekme açılır, bağlanınca komut çalışır.
+
 ### Port yönlendirme
-**Yerel**, **uzak** ve **dinamik (SOCKS5)** tüneller; tek tıkla başlat/durdur, canlı durum.
+**Yerel**, **uzak** ve **dinamik (SOCKS5)** tüneller; tek tıkla başlat/durdur, canlı durum. İstediğiniz tüneller uygulama açılınca kendiliğinden kurulur.
 
 ### Görünüm
 13 yerleşik tema (Kabuk, Tokyo Gecesi, Dracula, Catppuccin Mocha, Nord, One Dark, Gruvbox, Monokai, Rosé Pine, Solarized, GitHub Açık…) ve **kendi temanızı yapabileceğiniz düzenleyici**. JetBrains Mono ve Fira Code uygulamayla birlikte gelir.
@@ -87,6 +102,7 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 ## Güvenlik
 
 - **Hesap yok, bulut yok, telemetri yok.** Uygulama yalnızca sizin sunucularınıza ve güncelleme denetimi için GitHub'a bağlanır.
+- **Uygulama kilidi:** ana parola belirlerseniz uygulama açılışta, boşta kalınca ve ekran kilitlenince parola sorar (macOS'ta Touch ID ile de açılır). Bu yalnızca bir perde değildir: verileriniz diskte ayrıca bu paroladan türetilen anahtarla (scrypt + AES-256-GCM) şifrelenir ve parola girilmeden çözülemez. Parolayı unutursanız veriler kurtarılamaz; şifreli yedek alın.
 - Kayıtlı verileriniz işletim sisteminin güvenli deposuyla şifrelenir: macOS Anahtar Zinciri, Windows DPAPI, Linux'ta libsecret / KWallet.
 - **Şifreli yedek:** verilerinizi bir parolayla dışa aktarın (scrypt + AES-256-GCM), başka bir bilgisayarda birleştirerek ya da değiştirerek geri yükleyin.
 - Arayüz süreci korumalı alanda çalışır (`sandbox`, `contextIsolation`); Node.js erişimi yoktur.
@@ -97,12 +113,14 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 | İşlem | macOS | Windows / Linux |
 |---|---|---|
 | Komut paleti | `⌘K` | `Ctrl+Shift+K` |
+| Yerel terminal | `⌘T` | `Ctrl+Shift+T` |
 | Terminalde ara | `⌘F` | `Ctrl+Shift+F` |
 | Ekranı sağa böl | `⌘D` | `Ctrl+Shift+D` |
 | Ekranı aşağı böl | `⌘⇧D` | — |
 | Paneli kapat | `⌘W` | `Ctrl+Shift+W` |
 | Sonraki / önceki panel | `⌘]` / `⌘[` | `Ctrl+Shift+]` / `Ctrl+Shift+[` |
 | Tüm panellere yaz | `⌘⇧B` | `Ctrl+Shift+B` |
+| Şimdi kilitle | `⌘⇧L` | `Ctrl+Shift+L` |
 | Kopyala / yapıştır | `⌘C` / `⌘V` | `Ctrl+Shift+C` / `Ctrl+Shift+V` |
 | Sunucular (ana sayfa) | `⌘1` | `Ctrl+1` |
 | Sekmeler arası geçiş | `⌘2`…`⌘9` | `Ctrl+2`…`Ctrl+9` |
@@ -140,13 +158,13 @@ DAEMONTTY_USER_DATA=/tmp/daemontty-test npm run dev
 
 ```
 src/
-├── main/        Electron ana süreci: SSH (ssh2), SFTP, tüneller, şifreli depolama, güncelleme
+├── main/        Electron ana süreci: SSH (ssh2), yerel kabuk (node-pty), SFTP, tüneller, servisler, kilit, güncelleme
 ├── preload/     Arayüze açılan güvenli, tipli API köprüsü
 ├── renderer/    React 19 arayüzü, xterm.js terminal, otomatik tamamlama
 └── shared/      Ana süreç ile arayüzün ortak tipleri
 ```
 
-Electron · React 19 · TypeScript · xterm.js · ssh2 · electron-vite
+Electron · React 19 · TypeScript · xterm.js · ssh2 · node-pty · electron-vite
 
 ### Sürüm çıkarma
 

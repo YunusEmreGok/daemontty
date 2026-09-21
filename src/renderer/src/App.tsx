@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { Settings, VaultData } from '@shared/types'
 import { api, colorFor, isMac, uid } from './api'
-import { DEFAULT_SETTINGS } from '@shared/types'
+import { DEFAULT_SETTINGS, LOCAL_HOST_ID } from '@shared/types'
 import { Icon } from './components/Icon'
 import { DaemonttyLogo } from './components/DaemonttyLogo'
 import { TerminalTab } from './components/TerminalTab'
@@ -49,6 +49,7 @@ const NAV: Array<{ id: View; label: string; icon: string }> = [
 ]
 
 const HOME = 'home'
+export const LOCAL_TITLE = 'Yerel terminal'
 
 export default function App() {
   const [data, setData] = useState<VaultData | null>(null)
@@ -181,9 +182,9 @@ export default function App() {
     if (!data || restoredPins.current) return
     restoredPins.current = true
     const restored = data.settings.pinnedTabs
-      .map((p) => ({ p, host: data.hosts.find((h) => h.id === p.hostId) }))
-      .filter((x) => x.host)
-      .map(({ p, host }) => ({ id: uid(), kind: p.kind, hostId: p.hostId, title: host!.label, pinned: true }))
+      .map((p) => ({ p, title: p.hostId === LOCAL_HOST_ID ? LOCAL_TITLE : data.hosts.find((h) => h.id === p.hostId)?.label }))
+      .filter((x) => x.title)
+      .map(({ p, title }) => ({ id: uid(), kind: p.kind, hostId: p.hostId, title: title!, pinned: true }))
     if (restored.length) setTabs((t) => [...restored, ...t])
   }, [data])
 
@@ -213,6 +214,13 @@ export default function App() {
         if (next !== cur) updateSettings({ fontSize: next })
         return
       }
+      // Yerel terminal: Cmd+T (macOS) / Ctrl+Shift+T
+      if (e.code === 'KeyT' && (isMac ? !e.shiftKey : e.shiftKey)) {
+        e.preventDefault()
+        e.stopPropagation()
+        openTab('terminal', LOCAL_HOST_ID, LOCAL_TITLE)
+        return
+      }
       if (e.shiftKey) return
       const n = Number(e.key)
       if (n >= 1 && n <= 9) {
@@ -222,7 +230,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [tabs, active, data, updateSettings])
+  }, [tabs, active, data, updateSettings, openTab])
 
   if (!data) return <div className="loading">Yükleniyor…</div>
 
@@ -233,6 +241,13 @@ export default function App() {
           <button className={`tab tab-home ${active === HOME ? 'active' : ''}`} onClick={() => setActive(HOME)} title="Daemontty Ana Sayfa">
             <DaemonttyLogo size={16} />
             <span>Sunucular</span>
+          </button>
+          <button
+            className="tab-new"
+            onClick={() => openTab('terminal', LOCAL_HOST_ID, LOCAL_TITLE)}
+            title={`Yerel terminal (${isMac ? '⌘T' : 'Ctrl+Shift+T'})`}
+          >
+            <Icon name="plus" size={14} />
           </button>
           {update.status === 'available' && (
             <button className="update-pill" onClick={() => api.update.download()} title={`Daemontty ${update.version} — ${update.manual ? 'indirme sayfasını aç' : 'indir ve güncelle'}`}>
