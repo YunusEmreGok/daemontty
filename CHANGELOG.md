@@ -5,6 +5,8 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 
 ## Yayınlanmamış
 
+## [0.1.5] — 2026-09-21
+
 ### Eklendi
 - "Yeni sürüm var" penceresi artık o sürümde nelerin değiştiğini gösterir.
 - Ayarlar → Hakkında'ya bu günlüğü açan **Yenilikler** düğmesi.
@@ -62,6 +64,7 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 ### İyileştirildi
 - Bellek kullanımı: gizli sekmeler artık GPU belleği tutmuyor. 8 sekme açıkken toplam bellek 700 MB'tan 317 MB'a indi.
 
+[0.1.5]: https://github.com/YunusEmreGok/daemontty/releases/tag/v0.1.5
 [0.1.4]: https://github.com/YunusEmreGok/daemontty/releases/tag/v0.1.4
 [0.1.3]: https://github.com/YunusEmreGok/daemontty/releases/tag/v0.1.3
 [0.1.2]: https://github.com/YunusEmreGok/daemontty/releases/tag/v0.1.2
