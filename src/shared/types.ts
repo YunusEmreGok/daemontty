@@ -281,6 +281,35 @@ export type SessionEvent =
   | { type: 'closed'; reason: 'exit' | 'lost'; message?: string }
   | { type: 'error'; message: string; retryable?: boolean }
 
+export type ServiceKind = 'systemd' | 'docker'
+export type ServiceAction = 'start' | 'stop' | 'restart'
+
+export interface SystemdUnit {
+  name: string
+  /** active | inactive | failed | activating | deactivating */
+  active: string
+  /** running | exited | dead | failed | … */
+  sub: string
+  description: string
+}
+
+export interface DockerContainer {
+  name: string
+  image: string
+  /** running | exited | paused | restarting | created | dead */
+  state: string
+  /** "Up 3 hours" gibi okunur durum */
+  status: string
+}
+
+export interface ServiceList {
+  /** null: sunucuda systemd yok */
+  systemd: SystemdUnit[] | null
+  /** null: docker yok ya da erişilemiyor */
+  docker: DockerContainer[] | null
+  dockerDenied: boolean
+}
+
 export interface LockState {
   /** Ana parola belirlenmiş mi */
   enabled: boolean
@@ -395,6 +424,16 @@ export interface Api {
     stop(id: string): Promise<void>
     statuses(): Promise<ForwardStatus[]>
     onStatus(cb: (s: ForwardStatus) => void): () => void
+  }
+  services: {
+    list(sessionId: string): Promise<ServiceList>
+    /** Yetki gerekiyorsa ve sudo parola istiyorsa 'SUDO_PAROLASI_GEREKLI' hatası verir; parola ile yinelenir. */
+    action(sessionId: string, kind: ServiceKind, name: string, action: ServiceAction, sudoPassword?: string): Promise<void>
+    /** sudoPassword verilirse günlük sudo ile okunur (journal yetkisi olmayan kullanıcılar için). */
+    logs(sessionId: string, streamId: string, kind: ServiceKind, name: string, sudoPassword?: string): Promise<void>
+    stopLogs(streamId: string): void
+    onLog(cb: (streamId: string, chunk: string) => void): () => void
+    onLogEnd(cb: (streamId: string) => void): () => void
   }
   lock: {
     state(): Promise<LockState>

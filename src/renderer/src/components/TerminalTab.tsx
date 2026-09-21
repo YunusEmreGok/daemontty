@@ -7,6 +7,7 @@ import { allThemes, themeForHost } from '../themes'
 import { Icon } from './Icon'
 import { PaneHandle, PaneShortcut, PaneStatus, TerminalPane } from './TerminalPane'
 import { useUi } from './Ui'
+import { ServicesPanel } from './ServicesPanel'
 
 interface PaneInfo {
   id: string
@@ -27,6 +28,7 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
   const [broadcast, setBroadcast] = useState(false)
   const [statuses, setStatuses] = useState<Record<string, PaneStatus>>({})
   const [menu, setMenu] = useState<'snippets' | 'look' | 'split' | null>(null)
+  const [services, setServices] = useState(false)
   const handles = useRef(new Map<string, PaneHandle>())
 
   const focused = panes.find((p) => p.id === focusedId) ?? panes[0]
@@ -130,6 +132,14 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
             <Icon name="broadcast" size={13} /> {broadcast ? 'Tümüne yazılıyor' : 'Tümüne yaz'}
           </button>
         )}
+        <button
+          className={`bar-btn ${services ? 'bar-btn-on' : ''}`}
+          onClick={() => setServices((v) => !v)}
+          disabled={state !== 'ready' && !services}
+          title="systemd servisleri ve Docker kapsayıcıları"
+        >
+          <Icon name="zap" size={13} /> Servisler
+        </button>
         <div className="menu-anchor">
           <button className="bar-btn" onClick={() => setMenu(menu === 'split' ? null : 'split')} title="Ekranı böl">
             <Icon name="split" size={13} /> Böl
@@ -202,6 +212,7 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
         </div>
       </div>
 
+      <div className="session-body">
       <div className={layout}>
         {panes.map((p) => (
           <TerminalPane
@@ -221,6 +232,10 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
             registerHandle={(h) => (h ? handles.current.set(p.id, h) : handles.current.delete(p.id))}
           />
         ))}
+      </div>
+      {services && visible && state === 'ready' && (
+        <ServicesPanel sessionId={focused.id} hostLabel={host?.label ?? tab.title} onClose={() => setServices(false)} />
+      )}
       </div>
     </div>
   )

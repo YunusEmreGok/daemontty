@@ -96,6 +96,14 @@ const api: Api = {
     statuses: () => invoke('forward:statuses'),
     onStatus: (cb) => on('forward:status', cb)
   },
+  services: {
+    list: (id) => invoke('svc:list', id),
+    action: (id, kind, name, action, pw) => invoke('svc:action', id, kind, name, action, pw),
+    logs: (id, streamId, kind, name, pw) => invoke('svc:logs', id, streamId, kind, name, pw),
+    stopLogs: (streamId) => send('svc:logsStop', streamId),
+    onLog: (cb) => on('svc:log', cb),
+    onLogEnd: (cb) => on('svc:logEnd', cb)
+  },
   lock: {
     state: () => invoke('lock:state'),
     unlock: (pw) => invoke('lock:unlock', pw),

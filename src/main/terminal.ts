@@ -169,6 +169,11 @@ async function stats(id: string): Promise<ServerStats | null> {
   }
 }
 
+/** Açık oturumun SSH bağlantısı (servis paneli gibi aynı bağlantıyı kullanan özellikler için). */
+export function connectionOf(id: string): Connection | undefined {
+  return sessions.get(id)?.conn
+}
+
 export function closeAllTerminals(): void {
   for (const id of [...sessions.keys()]) close(id)
 }

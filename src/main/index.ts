@@ -12,6 +12,7 @@ import { registerBackupIpc } from './backup'
 import { registerProbeIpc } from './probe'
 import { registerUpdateIpc } from './updater'
 import { registerSessionLogIpc } from './sessionlog'
+import { registerServicesIpc } from './services'
 import { installLockGate, lockNow, registerLockIpc } from './lock'
 import { isSealed } from './vault'
 import './prompt'
@@ -167,6 +168,7 @@ app.whenReady().then(() => {
   registerProbeIpc()
   registerUpdateIpc()
   registerSessionLogIpc()
+  registerServicesIpc()
   // Paketli sürümde dock ikonu uygulama paketinden gelir; 1024px PNG'yi belleğe açmaya gerek yok.
   if (process.platform === 'darwin' && app.dock && !app.isPackaged) {
     try {
