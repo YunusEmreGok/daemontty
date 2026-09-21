@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { FileEntry, TransferProgress } from '@shared/types'
+import type { FileEntry, TextFile, TransferProgress } from '@shared/types'
 import { api, colorFor, errMsg, formatDate, formatSize, uid } from '../api'
 import { Tab, useApp } from '../App'
 import { Icon } from './Icon'
 import { useUi } from './Ui'
+import { FileEditor } from './FileEditor'
 
 const DRAG_TYPE = 'application/x-kabuk-files'
 const isWinLocal = api.platform === 'win32'
@@ -33,6 +34,10 @@ interface PaneApi {
   mkdir(p: string): Promise<void>
   rename(a: string, b: string): Promise<void>
   remove(e: FileEntry): Promise<void>
+  readText(p: string): Promise<TextFile>
+  writeText(p: string, content: string, mtime: number, force: boolean): Promise<number>
+  /** Düzenleyici başlığında görünen kaynak adı */
+  label: string
 }
 
 type Side = 'left' | 'right'
@@ -67,6 +72,7 @@ function FilePane(props: PaneProps) {
   const [showHidden, setShowHidden] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [menu, setMenu] = useState<{ x: number; y: number; entry: FileEntry } | null>(null)
+  const [editing, setEditing] = useState<FileEntry | null>(null)
 
   // Sadece en son istenen listenin sonucu uygulanır: klasör hızlı değişirse ya da panel
   // kaynağı değişip bu bileşen kaldırılırsa geç gelen eski sonuçlar yok sayılır.
@@ -107,6 +113,7 @@ function FilePane(props: PaneProps) {
 
   const open = (e: FileEntry): void => {
     if (e.isDir) props.setCwd(e.path)
+    else setEditing(e)
   }
 
   const clickRow = (e: React.MouseEvent, entry: FileEntry): void => {
@@ -271,11 +278,15 @@ function FilePane(props: PaneProps) {
       </div>
       {menu && (
         <div className="menu context-menu" style={{ left: menu.x, top: menu.y }} onMouseLeave={() => setMenu(null)}>
-          {menu.entry.isDir && (
-            <button className="menu-item" onClick={() => open(menu.entry)}>
-              Aç
-            </button>
-          )}
+          <button
+            className="menu-item"
+            onClick={() => {
+              open(menu.entry)
+              setMenu(null)
+            }}
+          >
+            {menu.entry.isDir ? 'Aç' : 'Düzenle'}
+          </button>
           <button className="menu-item" onClick={() => props.onTransfer(selected.size ? [...selected] : [menu.entry.path])}>
             {props.transferLabel}
           </button>
@@ -291,6 +302,19 @@ function FilePane(props: PaneProps) {
             Sil
           </button>
         </div>
+      )}
+      {editing && (
+        <FileEditor
+          name={editing.name}
+          path={editing.path}
+          source={ops.label}
+          read={() => ops.readText(editing.path)}
+          write={(content, mtime, force) => ops.writeText(editing.path, content, mtime, force)}
+          onClose={(saved) => {
+            setEditing(null)
+            if (saved) load()
+          }}
+        />
       )}
     </section>
   )
@@ -363,19 +387,28 @@ export function SftpTab({ tab, visible }: { tab: Tab; visible: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const sourceLabel = (pn: PaneState): string =>
+    pn.source.kind === 'remote' ? (data.hosts.find((h) => h.id === (pn.source as { hostId: string }).hostId)?.label ?? 'Sunucu') : 'Bu bilgisayar'
+
   const opsFor = (pn: PaneState): PaneApi =>
     pn.sftpId
       ? {
           list: (p) => api.sftp.list(pn.sftpId!, p),
           mkdir: (p) => api.sftp.mkdir(pn.sftpId!, p),
           rename: (a, b) => api.sftp.rename(pn.sftpId!, a, b),
-          remove: (e) => api.sftp.remove(pn.sftpId!, e.path, e.isDir)
+          remove: (e) => api.sftp.remove(pn.sftpId!, e.path, e.isDir),
+          readText: (p) => api.sftp.readText(pn.sftpId!, p),
+          writeText: (p, c, m, f) => api.sftp.writeText(pn.sftpId!, p, c, m, f),
+          label: sourceLabel(pn)
         }
       : {
           list: (p) => api.local.list(p),
           mkdir: (p) => api.local.mkdir(p),
           rename: (a, b) => api.local.rename(a, b),
-          remove: (e) => api.local.remove(e.path)
+          remove: (e) => api.local.remove(e.path),
+          readText: (p) => api.local.readText(p),
+          writeText: (p, c, m, f) => api.local.writeText(p, c, m, f),
+          label: 'Bu bilgisayar'
         }
   const leftOps = useMemo(() => opsFor(panes.left), [panes.left.sftpId]) // eslint-disable-line react-hooks/exhaustive-deps
   const rightOps = useMemo(() => opsFor(panes.right), [panes.right.sftpId]) // eslint-disable-line react-hooks/exhaustive-deps

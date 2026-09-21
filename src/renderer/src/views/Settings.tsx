@@ -448,6 +448,15 @@ function BehaviorSettings({ s, save }: { s: Settings; save(p: Partial<Settings>)
             title="GPU ile hızlandırılmış çizim"
             desc="Terminal daha akıcı çizilir. Görüntü bozulması olursa kapatın."
           />
+          <Toggle
+            checked={s.sessionLog}
+            onChange={(v) => save({ sessionLog: v })}
+            title="Oturumları dosyaya kaydet"
+            desc="Terminal çıktısı sunucu başına klasörlere düz metin olarak yazılır. Yeni açılan oturumlardan itibaren geçerlidir; kayıtlar şifrelenmez."
+          />
+          <button type="button" className="btn btn-sm" onClick={() => api.logs.openDir()}>
+            <Icon name="folder" /> Kayıt klasörünü aç
+          </button>
         </div>
       </section>
     </>

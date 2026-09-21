@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ServerStats } from '@shared/types'
 import { api, colorFor, formatSize, isMac, uid } from '../api'
 import { Tab, useApp } from '../App'
-import { registerTab, runInTab } from '../sessions'
+import { fillSnippet, registerTab, runInTab } from '../sessions'
 import { allThemes, themeForHost } from '../themes'
 import { Icon } from './Icon'
 import { PaneHandle, PaneShortcut, PaneStatus, TerminalPane } from './TerminalPane'
@@ -91,9 +91,10 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
 
   const stats = useServerStats(focused.id, visible && state === 'ready' && settings.showServerStats)
 
-  const runSnippet = (command: string): void => {
+  const runSnippet = async (s: { name: string; command: string }): Promise<void> => {
     setMenu(null)
-    runInTab(tab.id, command)
+    const cmd = await fillSnippet(ui, s)
+    if (cmd !== null) runInTab(tab.id, cmd)
     handles.current.get(focusedId)?.focus()
   }
 
@@ -191,7 +192,7 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
               {broadcast && <div className="menu-label">Tüm panellerde çalışır</div>}
               {data.snippets.length === 0 && <div className="menu-empty">Henüz snippet yok</div>}
               {data.snippets.map((s) => (
-                <button key={s.id} className="menu-item" onClick={() => runSnippet(s.command)}>
+                <button key={s.id} className="menu-item" onClick={() => runSnippet(s)}>
                   <strong>{s.name}</strong>
                   <code>{s.command.split('\n')[0]}</code>
                 </button>
@@ -207,6 +208,7 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
             key={p.id}
             paneId={p.id}
             hostId={p.hostId}
+            initialCommand={p.id === tab.id ? tab.initialCommand : undefined}
             visible={visible}
             focused={p.id === focused.id}
             multi={multi}

@@ -5,7 +5,7 @@ import path from 'path'
 import { posix } from 'path'
 import { pipeline } from 'stream/promises'
 import { SFTPWrapper } from 'ssh2'
-import { FileEntry, TransferProgress } from '@shared/types'
+import { FileEntry, TextFile, TransferProgress } from '@shared/types'
 import { connect, Connection } from './connection'
 import { newId } from './vault'
 
@@ -241,7 +241,67 @@ function listLocal(dir: string): FileEntry[] {
   })
 }
 
+// --- Yerinde düzenleme: küçük metin dosyaları arayüzdeki düzenleyicide açılır ---
+
+const MAX_EDIT_BYTES = 2 * 1024 * 1024
+const mtimeChanged = 'Dosya bu arada değişmiş'
+
+function toText(buf: Buffer): string {
+  if (buf.includes(0)) throw new Error('İkili (binary) dosya düzenlenemez')
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf)
+  } catch {
+    throw new Error('Dosya UTF-8 metin değil; bozulmaması için açılmadı')
+  }
+}
+
+function checkSize(size: number): void {
+  if (size > MAX_EDIT_BYTES) throw new Error('Dosya düzenlemek için çok büyük (en fazla 2 MB). İndirip düzenleyin.')
+}
+
+async function readRemoteText(id: string, file: string): Promise<TextFile> {
+  const { sftp } = get(id)
+  const st = await p<{ size: number; mtime: number; isDirectory(): boolean }>((cb) => sftp.stat(file, cb as never))
+  if (st.isDirectory()) throw new Error('Bu bir klasör')
+  checkSize(st.size)
+  const buf = await p<Buffer>((cb) => sftp.readFile(file, cb))
+  return { content: toText(buf), mtime: st.mtime }
+}
+
+/** mtime: dosya açıldığındaki değer; sunucuda değiştiyse (force değilse) yazmaz. */
+async function writeRemoteText(id: string, file: string, content: string, mtime: number | null, force: boolean): Promise<number> {
+  const { sftp } = get(id)
+  if (mtime !== null && !force) {
+    const cur = await p<{ mtime: number }>((cb) => sftp.stat(file, cb as never))
+    if (cur.mtime !== mtime) throw new Error(mtimeChanged)
+  }
+  // Var olan dosyada izinler (mode) korunur: dosya silinmez, içeriği yeniden yazılır.
+  await p<void>((cb) => sftp.writeFile(file, Buffer.from(content, 'utf8'), cb))
+  return (await p<{ mtime: number }>((cb) => sftp.stat(file, cb as never))).mtime
+}
+
+function readLocalText(file: string): TextFile {
+  const st = fs.statSync(file)
+  if (st.isDirectory()) throw new Error('Bu bir klasör')
+  checkSize(st.size)
+  return { content: toText(fs.readFileSync(file)), mtime: st.mtimeMs }
+}
+
+function writeLocalText(file: string, content: string, mtime: number | null, force: boolean): number {
+  if (mtime !== null && !force && fs.statSync(file).mtimeMs !== mtime) throw new Error(mtimeChanged)
+  fs.writeFileSync(file, content, 'utf8')
+  return fs.statSync(file).mtimeMs
+}
+
 export function registerSftpIpc(): void {
+  ipcMain.handle('sftp:readText', (_e, id: string, file: string) => readRemoteText(id, file))
+  ipcMain.handle('sftp:writeText', (_e, id: string, file: string, content: string, mtime: number | null, force: boolean) =>
+    writeRemoteText(id, file, content, mtime, force)
+  )
+  ipcMain.handle('local:readText', (_e, file: string) => readLocalText(file))
+  ipcMain.handle('local:writeText', (_e, file: string, content: string, mtime: number | null, force: boolean) =>
+    writeLocalText(file, content, mtime, force)
+  )
   ipcMain.handle('sftp:open', (_e, id: string, hostId: string) => open(id, hostId))
   ipcMain.on('sftp:close', (_e, id: string) => close(id))
   ipcMain.handle('sftp:list', (_e, id: string, dir: string) => list(id, dir))

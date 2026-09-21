@@ -23,6 +23,8 @@ export interface PaneHandle {
 interface Props {
   paneId: string
   hostId: string
+  /** İlk bağlantıda bir kez çalıştırılır */
+  initialCommand?: string
   /** Sekme görünür mü */
   visible: boolean
   focused: boolean
@@ -83,6 +85,7 @@ export function TerminalPane(p: Props) {
   settingsRef.current = settings
   const retryTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const everConnected = useRef(false)
+  const ranInitial = useRef(false)
 
   const ac = useAutocomplete({ termRef, wrapRef, sessionId: p.paneId, hostId: p.hostId, settings, snippets: data.snippets, theme })
 
@@ -235,6 +238,11 @@ export function TerminalPane(p: Props) {
             else if (ev.type === 'ready') {
               if (connRef.current.retry) term.write('\x1b[32m● Yeniden bağlandı\x1b[0m\r\n')
               everConnected.current = true
+              const initial = props.current.initialCommand
+              if (initial && !ranInitial.current) {
+                ranInitial.current = true
+                api.ssh.write(p.paneId, initial.replace(/\r?\n/g, '\r') + '\r')
+              }
               setConn({ status: 'ready' })
               if (props.current.focused) term.focus()
             } else if (ev.type === 'error') {

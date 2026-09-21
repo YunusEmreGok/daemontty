@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain } from 'electron'
 import net from 'net'
 import { ForwardStatus, PortForward } from '@shared/types'
 import { connect, Connection } from './connection'
-import { getForward } from './vault'
+import { allForwards, getForward } from './vault'
 
 interface Running {
   conn?: Connection
@@ -182,6 +182,11 @@ function stop(id: string): void {
 
 export function stopAllForwards(): void {
   for (const id of [...running.keys()]) stop(id)
+}
+
+/** "Açılışta başlat" işaretli tünelleri başlatır; hatalar tünelin durumunda görünür. */
+export function startAutoForwards(): void {
+  for (const f of allForwards()) if (f.autoStart) start(f.id).catch(() => {})
 }
 
 export function registerForwardIpc(): void {

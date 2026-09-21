@@ -91,6 +91,7 @@ export function ForwardsView() {
                     <strong>{f.name || describe(f)}</strong>
                     <span className="muted small">
                       {TYPES[f.type].label} · {host?.label ?? '?'} · {describe(f)}
+                      {f.autoStart && ' · açılışta başlar'}
                     </span>
                     {st?.message && state !== 'running' && (
                       <span className={`small ${state === 'error' ? 'text-danger' : 'muted'}`}>{st.message}</span>
@@ -209,6 +210,13 @@ function ForwardForm({ initial, onClose }: { initial: PortForward; onClose(): vo
             </div>
           </>
         )}
+        <label className="check">
+          <input type="checkbox" checked={!!f.autoStart} onChange={(e) => set('autoStart', e.target.checked || undefined)} />
+          <span>
+            Açılışta başlat
+            <small className="muted block">Daemontty açılınca bu tünel kendiliğinden kurulur</small>
+          </span>
+        </label>
       </form>
     </Drawer>
   )

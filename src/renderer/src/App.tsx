@@ -21,6 +21,8 @@ export interface Tab {
   hostId: string
   title: string
   pinned?: boolean
+  /** Bağlantı kurulunca bir kez çalıştırılacak komut (snippet'i kapalı sunucularda çalıştırma) */
+  initialCommand?: string
 }
 
 
@@ -28,7 +30,7 @@ interface AppCtx {
   data: VaultData
   tabs: Tab[]
   /** title verilirse host henüz arayüz verisine gelmemiş olsa da sekme açılır (hızlı bağlantı). */
-  openTab(kind: Tab['kind'], hostId: string, title?: string): void
+  openTab(kind: Tab['kind'], hostId: string, title?: string, opts?: { command?: string; background?: boolean }): void
   focusTab(id: string): void
   /** Ayarı ekranda hemen uygular, diske kısa bir gecikmeyle toplu yazar. */
   updateSettings(patch: Partial<Settings>): void
@@ -109,12 +111,12 @@ export default function App() {
   }, [])
 
   const openTab = useCallback(
-    (kind: Tab['kind'], hostId: string, title?: string) => {
+    (kind: Tab['kind'], hostId: string, title?: string, opts?: { command?: string; background?: boolean }) => {
       const label = title ?? data?.hosts.find((h) => h.id === hostId)?.label
       if (!label) return
-      const tab: Tab = { id: uid(), kind, hostId, title: label }
+      const tab: Tab = { id: uid(), kind, hostId, title: label, initialCommand: opts?.command }
       setTabs((t) => [...t, tab])
-      setActive(tab.id)
+      if (!opts?.background) setActive(tab.id)
     },
     [data]
   )
@@ -152,6 +154,25 @@ export default function App() {
     const idx = Math.max(tabs.indexOf(src), pinnedCount - 1)
     setTabs([...tabs.slice(0, idx + 1), copy, ...tabs.slice(idx + 1)])
     setActive(copy.id)
+  }
+
+  // Sürükleyerek sıralama: imleç hedef sekmenin ortasını geçince yer değiştirir (titremeyi önler).
+  // Sabitlenmişler ve diğerleri kendi bölgelerinde kalır.
+  const dragTab = useRef<string | null>(null)
+  const onTabDragOver = (e: React.DragEvent, overId: string): void => {
+    const from = dragTab.current
+    if (!from) return
+    e.preventDefault()
+    if (from === overId) return
+    const a = tabs.findIndex((t) => t.id === from)
+    const b = tabs.findIndex((t) => t.id === overId)
+    if (a < 0 || b < 0 || !!tabs[a].pinned !== !!tabs[b].pinned) return
+    const r = e.currentTarget.getBoundingClientRect()
+    const mid = r.left + r.width / 2
+    if (a < b ? e.clientX < mid : e.clientX > mid) return
+    const next = [...tabs]
+    next.splice(b, 0, next.splice(a, 1)[0])
+    setTabs(next)
   }
 
   // Açılışta sabitlenmiş sekmeleri geri yükle (bir kez).
@@ -237,6 +258,14 @@ export default function App() {
               key={t.id}
               className={`tab ${active === t.id ? 'active' : ''} ${t.pinned ? 'tab-pinned' : ''} ${tabMenu?.id === t.id ? 'menu-open' : ''}`}
               onClick={() => setActive(t.id)}
+              draggable
+              onDragStart={(e) => {
+                dragTab.current = t.id
+                e.dataTransfer.effectAllowed = 'move'
+                e.dataTransfer.setData('application/x-daemontty-tab', t.id) // düz metin değil: terminale bırakılırsa yazı yapışmasın
+              }}
+              onDragOver={(e) => onTabDragOver(e, t.id)}
+              onDragEnd={() => (dragTab.current = null)}
               onMouseDown={(e) => e.button === 1 && !t.pinned && closeTab(t.id)}
               onContextMenu={(e) => {
                 e.preventDefault()

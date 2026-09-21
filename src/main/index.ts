@@ -5,12 +5,13 @@ import { Collection, Settings } from '@shared/types'
 import { flushHistory, loadVault, onVaultChange, publicView, remove, saveSettings, upsert } from './vault'
 import { closeAllTerminals, registerTerminalIpc } from './terminal'
 import { closeAllSftp, registerSftpIpc } from './sftp'
-import { registerForwardIpc, stopAllForwards } from './forwarding'
+import { registerForwardIpc, startAutoForwards, stopAllForwards } from './forwarding'
 import { registerKeyIpc } from './keys'
 import { importSshConfig } from './sshconfig'
 import { registerBackupIpc } from './backup'
 import { registerProbeIpc } from './probe'
 import { registerUpdateIpc } from './updater'
+import { registerSessionLogIpc } from './sessionlog'
 import './prompt'
 
 app.setName('Daemontty')
@@ -160,6 +161,7 @@ app.whenReady().then(() => {
   registerBackupIpc()
   registerProbeIpc()
   registerUpdateIpc()
+  registerSessionLogIpc()
   // Paketli sürümde dock ikonu uygulama paketinden gelir; 1024px PNG'yi belleğe açmaya gerek yok.
   if (process.platform === 'darwin' && app.dock && !app.isPackaged) {
     try {
@@ -169,6 +171,7 @@ app.whenReady().then(() => {
     }
   }
   createWindow()
+  startAutoForwards()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

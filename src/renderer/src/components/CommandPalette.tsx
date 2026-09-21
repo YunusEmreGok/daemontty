@@ -4,7 +4,7 @@ import { api, colorFor, errMsg, uid } from '../api'
 import type { Tab } from '../App'
 import { useApp } from '../App'
 import { allThemes } from '../themes'
-import { runInTab } from '../sessions'
+import { fillSnippet, runInTab } from '../sessions'
 import { Icon } from './Icon'
 import { useUi } from './Ui'
 
@@ -76,8 +76,10 @@ export function CommandPalette({ onClose, setView, activeTab }: Props) {
           subtitle: s.command.split('\n')[0],
           group: `Snippet çalıştır → ${activeTab.title}`,
           icon: 'code',
-          run: () => {
-            runInTab(activeTab.id, s.command)
+          run: async () => {
+            const cmd = await fillSnippet(ui, s)
+            if (cmd === null) return
+            runInTab(activeTab.id, cmd)
             focusTab(activeTab.id)
           }
         })

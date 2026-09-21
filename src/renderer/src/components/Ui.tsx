@@ -18,14 +18,17 @@ interface Dialog {
   message?: string
   fields: Array<PromptField & { initial?: string }>
   confirmLabel: string
+  cancelLabel?: string
   danger?: boolean
   resolve(values: string[] | null): void
 }
 
 interface UiApi {
   toast(text: string, kind?: ToastKind): void
-  confirm(title: string, message?: string, opts?: { confirmLabel?: string; danger?: boolean }): Promise<boolean>
+  confirm(title: string, message?: string, opts?: { confirmLabel?: string; cancelLabel?: string; danger?: boolean }): Promise<boolean>
   ask(title: string, label: string, initial?: string): Promise<string | null>
+  /** Birden çok alanlı soru; iptal edilirse null. */
+  form(title: string, fields: Array<{ label: string; initial?: string; secret?: boolean }>, opts?: { message?: string; confirmLabel?: string }): Promise<string[] | null>
 }
 
 const UiContext = createContext<UiApi>(null as never)
@@ -49,7 +52,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
 
   const confirm = useCallback<UiApi['confirm']>(
     async (title, message, opts) =>
-      (await open({ title, message, fields: [], confirmLabel: opts?.confirmLabel ?? 'Tamam', danger: opts?.danger })) !== null,
+      (await open({ title, message, fields: [], confirmLabel: opts?.confirmLabel ?? 'Tamam', cancelLabel: opts?.cancelLabel, danger: opts?.danger })) !== null,
     [open]
   )
 
@@ -58,6 +61,12 @@ export function UiProvider({ children }: { children: ReactNode }) {
       const v = await open({ title, fields: [{ label, secret: false, initial }], confirmLabel: 'Kaydet' })
       return v ? v[0].trim() || null : null
     },
+    [open]
+  )
+
+  const form = useCallback<UiApi['form']>(
+    (title, fields, opts) =>
+      open({ title, message: opts?.message, fields: fields.map((f) => ({ label: f.label, initial: f.initial, secret: !!f.secret })), confirmLabel: opts?.confirmLabel ?? 'Tamam' }),
     [open]
   )
 
@@ -77,7 +86,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <UiContext.Provider value={{ toast, confirm, ask }}>
+    <UiContext.Provider value={{ toast, confirm, ask, form }}>
       {children}
       {dialogs.slice(0, 1).map((d) => (
         <DialogView key={d.id} dialog={d} onClose={(v) => close(d, v)} />
@@ -137,7 +146,7 @@ function DialogView({ dialog, onClose }: { dialog: Dialog; onClose(values: strin
         ))}
         <div className="modal-actions">
           <button type="button" className="btn" onClick={() => onClose(null)}>
-            İptal
+            {dialog.cancelLabel ?? 'İptal'}
           </button>
           <button ref={okBtn} type="submit" className={`btn ${dialog.danger ? 'btn-danger' : 'btn-primary'}`}>
             {dialog.confirmLabel}

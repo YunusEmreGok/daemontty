@@ -4,11 +4,13 @@ import { ClientChannel, SFTPWrapper } from 'ssh2'
 import { DirListing, ServerStats, SessionEvent } from '@shared/types'
 import { connect, Connection } from './connection'
 import { addHistory, clearHistory, getHistory, historyCount } from './vault'
+import { openSessionLog, SessionLog } from './sessionlog'
 
 interface Session {
   conn?: Connection
   stream?: ClientChannel
   closed: boolean
+  log?: SessionLog | null
   /** Yol tamamlama için aynı bağlantı üzerinde tembel açılan SFTP kanalı */
   sftp?: Promise<{ sftp: SFTPWrapper; home: string }>
 }
@@ -35,8 +37,10 @@ async function open(wc: WebContents, id: string, hostId: string, cols: number, r
     session.stream = stream
 
     // Buffer olarak gönderiyoruz; UTF-8 karakterler (ş, ğ, ı…) parçalara bölünse bile xterm doğru birleştirir.
+    session.log = openSessionLog(conn.host.label)
     const onData = (d: Buffer): void => {
       if (!wc.isDestroyed()) wc.send('ssh:data', id, d)
+      session.log?.write(d)
     }
     stream.on('data', onData)
     stream.stderr.on('data', onData)
@@ -80,6 +84,7 @@ function close(id: string): void {
   sessions.delete(id)
   s.stream?.end()
   s.conn?.dispose()
+  s.log?.close()
 }
 
 function sftpOf(s: Session): Promise<{ sftp: SFTPWrapper; home: string }> {

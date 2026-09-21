@@ -219,6 +219,10 @@ export function getIdentity(id: string): Identity | undefined {
   return vault.identities.find((i) => i.id === id)
 }
 
+export function allForwards(): PortForward[] {
+  return vault.forwards
+}
+
 export function getForward(id: string): PortForward | undefined {
   return vault.forwards.find((f) => f.id === id)
 }

@@ -73,6 +73,8 @@ const api: Api = {
     remove: (id, p, isDir) => invoke('sftp:remove', id, p, isDir),
     download: (id, paths, dir) => invoke('sftp:download', id, paths, dir),
     upload: (id, paths, dir) => invoke('sftp:upload', id, paths, dir),
+    readText: (id, p) => invoke('sftp:readText', id, p),
+    writeText: (id, p, content, mtime, force) => invoke('sftp:writeText', id, p, content, mtime, force),
     copy: (fromId, paths, toId, dir) => invoke('sftp:copy', fromId, paths, toId, dir),
     onProgress: (cb) => on('sftp:progress', cb)
   },
@@ -84,6 +86,8 @@ const api: Api = {
     remove: (p) => invoke('local:remove', p),
     copy: (paths, dir) => invoke('local:copy', paths, dir),
     reveal: (p) => send('local:reveal', p),
+    readText: (p) => invoke('local:readText', p),
+    writeText: (p, content, mtime, force) => invoke('local:writeText', p, content, mtime, force),
     pathForFile: (file) => webUtils.getPathForFile(file)
   },
   forwards: {
@@ -91,6 +95,9 @@ const api: Api = {
     stop: (id) => invoke('forward:stop', id),
     statuses: () => invoke('forward:statuses'),
     onStatus: (cb) => on('forward:status', cb)
+  },
+  logs: {
+    openDir: () => invoke('logs:openDir')
   },
   prompt: {
     onRequest: (cb) => on('prompt:request', cb),

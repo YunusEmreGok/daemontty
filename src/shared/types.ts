@@ -70,6 +70,8 @@ export interface PortForward {
   bindPort: number
   destHost?: string
   destPort?: number
+  /** Uygulama açılınca kendiliğinden başlat */
+  autoStart?: boolean
 }
 
 export interface TerminalTheme {
@@ -128,6 +130,8 @@ export interface Settings {
   useSystemKeys: boolean
   /** Terminali GPU (WebGL) ile çiz; kapalıysa DOM ile çizilir. */
   gpuRendering: boolean
+  /** Terminal çıktısını düz metin olarak diske kaydet. */
+  sessionLog: boolean
   /** Sabitlenmiş sekmeler; uygulama açılınca yeniden açılır. */
   pinnedTabs: PinnedTab[]
 }
@@ -203,6 +207,7 @@ export const DEFAULT_SETTINGS: Settings = {
   useSystemKeys: true,
   autoReconnect: true,
   showServerStats: true,
+  sessionLog: false,
   pinnedTabs: []
 }
 
@@ -236,6 +241,12 @@ export interface FileEntry {
   size: number
   mtime: number
   mode?: number
+}
+
+/** Düzenleyicide açılan metin dosyası; mtime değişiklik çakışmasını yakalamak için tutulur. */
+export interface TextFile {
+  content: string
+  mtime: number
 }
 
 export interface TransferProgress {
@@ -347,6 +358,9 @@ export interface Api {
     remove(sftpId: string, path: string, isDir: boolean): Promise<void>
     download(sftpId: string, remotePaths: string[], localDir: string): Promise<void>
     upload(sftpId: string, localPaths: string[], remoteDir: string): Promise<void>
+    readText(sftpId: string, path: string): Promise<TextFile>
+    /** Yeni mtime'ı döndürür. mtime verilmişse ve dosya bu arada değişmişse (force değilse) hata verir. */
+    writeText(sftpId: string, path: string, content: string, mtime: number | null, force: boolean): Promise<number>
     /** Sunucudan sunucuya kopyalama (veri uygulama üzerinden akar) */
     copy(fromId: string, paths: string[], toId: string, destDir: string): Promise<void>
     onProgress(cb: (p: TransferProgress) => void): () => void
@@ -359,6 +373,8 @@ export interface Api {
     remove(path: string): Promise<void>
     copy(paths: string[], destDir: string): Promise<void>
     reveal(path: string): void
+    readText(path: string): Promise<TextFile>
+    writeText(path: string, content: string, mtime: number | null, force: boolean): Promise<number>
     /** Sürükle-bırak ile gelen dosyanın diskteki yolu. */
     pathForFile(file: File): string
   }
@@ -367,6 +383,10 @@ export interface Api {
     stop(id: string): Promise<void>
     statuses(): Promise<ForwardStatus[]>
     onStatus(cb: (s: ForwardStatus) => void): () => void
+  }
+  logs: {
+    /** Oturum kayıtlarının tutulduğu klasörü dosya yöneticisinde açar. */
+    openDir(): Promise<void>
   }
   prompt: {
     onRequest(cb: (req: PromptRequest) => void): () => void

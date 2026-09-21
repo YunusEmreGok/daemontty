@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Snippet } from '@shared/types'
 import { api, matches, uid } from '../api'
-import { runInTab } from '../sessions'
+import { fillSnippet, runInTab } from '../sessions'
 import { useApp } from '../App'
 import { Icon } from '../components/Icon'
 import { Drawer, Empty, Field, useUi } from '../components/Ui'
@@ -110,7 +110,7 @@ function SnippetForm({ initial, onClose }: { initial: Snippet; onClose(): void }
         <Field label="Ad">
           <input autoFocus value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} placeholder="Disk kullanımı" />
         </Field>
-        <Field label="Komut" hint="Birden çok satır yazabilirsiniz; her satır sırayla çalıştırılır.">
+        <Field label="Komut" hint="Birden çok satır yazabilirsiniz; her satır sırayla çalıştırılır. {{ad}} yazarsanız çalıştırırken sorulur; {{ad:varsayılan}} ile hazır değer verebilirsiniz.">
           <textarea
             className="mono"
             rows={8}
@@ -126,15 +126,34 @@ function SnippetForm({ initial, onClose }: { initial: Snippet; onClose(): void }
 }
 
 function RunSnippet({ snippet, onClose }: { snippet: Snippet; onClose(): void }) {
-  const { tabs, focusTab } = useApp()
+  const { data, tabs, focusTab, openTab } = useApp()
   const ui = useUi()
   const terminals = tabs.filter((t) => t.kind === 'terminal')
   const [selected, setSelected] = useState<Set<string>>(new Set(terminals.map((t) => t.id)))
+  // Henüz bağlı olmayan sunucular: seçilenler için sekme açılır, bağlanınca komut çalışır.
+  const [hosts, setHosts] = useState<Set<string>>(new Set())
 
-  const run = (): void => {
-    selected.forEach((id) => runInTab(id, snippet.command))
-    ui.toast(`"${snippet.name}" ${selected.size} terminalde çalıştırıldı`, 'success')
-    if (selected.size === 1) focusTab([...selected][0])
+  const toggle = (set: React.Dispatch<React.SetStateAction<Set<string>>>, ids: string[], on: boolean): void =>
+    set((s) => {
+      const n = new Set(s)
+      ids.forEach((id) => (on ? n.add(id) : n.delete(id)))
+      return n
+    })
+
+  const closed = data.hosts.filter((h) => !terminals.some((t) => t.hostId === h.id))
+  const groups = [
+    ...data.groups.map((g) => ({ name: g.name, hosts: closed.filter((h) => h.groupId === g.id) })),
+    { name: 'Grupsuz', hosts: closed.filter((h) => !h.groupId || !data.groups.some((g) => g.id === h.groupId)) }
+  ].filter((g) => g.hosts.length)
+
+  const run = async (): Promise<void> => {
+    const cmd = await fillSnippet(ui, snippet)
+    if (cmd === null) return
+    selected.forEach((id) => runInTab(id, cmd))
+    hosts.forEach((id) => openTab('terminal', id, undefined, { command: cmd, background: true }))
+    const total = selected.size + hosts.size
+    ui.toast(`"${snippet.name}" ${total} sunucuda çalıştırıldı${hosts.size ? ` (${hosts.size} yeni bağlantı)` : ''}`, 'success')
+    if (total === 1 && selected.size === 1) focusTab([...selected][0])
     onClose()
   }
 
@@ -148,37 +167,43 @@ function RunSnippet({ snippet, onClose }: { snippet: Snippet; onClose(): void })
           <button className="btn" onClick={onClose}>
             İptal
           </button>
-          <button className="btn btn-primary" disabled={!selected.size} onClick={run}>
-            <Icon name="play" /> Çalıştır
+          <button className="btn btn-primary" disabled={!selected.size && !hosts.size} onClick={run}>
+            <Icon name="play" /> Çalıştır{selected.size + hosts.size > 1 ? ` (${selected.size + hosts.size})` : ''}
           </button>
         </>
       }
     >
       <pre className="snippet-preview">{snippet.command}</pre>
-      {terminals.length === 0 ? (
-        <p className="muted">Açık terminal yok. Önce bir host'a bağlanın.</p>
-      ) : (
-        <div className="form">
-          <h4>Hangi terminallerde çalışsın?</h4>
-          {terminals.map((t) => (
-            <label key={t.id} className="check">
-              <input
-                type="checkbox"
-                checked={selected.has(t.id)}
-                onChange={(e) =>
-                  setSelected((s) => {
-                    const n = new Set(s)
-                    if (e.target.checked) n.add(t.id)
-                    else n.delete(t.id)
-                    return n
-                  })
-                }
-              />
-              <Icon name="terminal" /> {t.title}
-            </label>
-          ))}
-        </div>
-      )}
+      <div className="form">
+        {terminals.length > 0 && <h4>Açık terminaller</h4>}
+        {terminals.map((t) => (
+          <label key={t.id} className="check">
+            <input type="checkbox" checked={selected.has(t.id)} onChange={(e) => toggle(setSelected, [t.id], e.target.checked)} />
+            <Icon name="terminal" /> {t.title}
+          </label>
+        ))}
+        {groups.length > 0 && <h4>Bağlı olmayan sunucular</h4>}
+        {groups.length > 0 && <p className="muted small">Seçtikleriniz için sekme açılır; bağlantı kurulunca komut çalışır.</p>}
+        {groups.map((g) => {
+          const ids = g.hosts.map((h) => h.id)
+          const all = ids.every((id) => hosts.has(id))
+          return (
+            <div key={g.name} className="run-group">
+              <label className="check run-group-head">
+                <input type="checkbox" checked={all} onChange={(e) => toggle(setHosts, ids, e.target.checked)} />
+                <Icon name="folder" /> <strong>{g.name}</strong> <span className="muted small">{ids.length} sunucu</span>
+              </label>
+              {g.hosts.map((h) => (
+                <label key={h.id} className="check run-group-host">
+                  <input type="checkbox" checked={hosts.has(h.id)} onChange={(e) => toggle(setHosts, [h.id], e.target.checked)} />
+                  <Icon name="server" /> {h.label}
+                </label>
+              ))}
+            </div>
+          )
+        })}
+        {terminals.length === 0 && groups.length === 0 && <p className="muted">Henüz host yok.</p>}
+      </div>
     </Drawer>
   )
 }
