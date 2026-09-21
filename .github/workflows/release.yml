@@ -9,11 +9,16 @@ on:
 permissions:
   contents: write
 
+# Windows'ta varsayılan PowerShell, `-c.npmRebuild=false` argümanını noktadan böler.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Etiket package.json sürümüyle aynı mı
         run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
       # Paralel derlemeler aynı sürüme yüklesin diye sürümü önce oluştur.
@@ -35,8 +40,8 @@ jobs:
             args: --linux
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
