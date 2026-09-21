@@ -104,7 +104,7 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 | Sonraki / önceki panel | `⌘]` / `⌘[` | `Ctrl+Shift+]` / `Ctrl+Shift+[` |
 | Tüm panellere yaz | `⌘⇧B` | `Ctrl+Shift+B` |
 | Kopyala / yapıştır | `⌘C` / `⌘V` | `Ctrl+Shift+C` / `Ctrl+Shift+V` |
-| Kasa (ana sayfa) | `⌘1` | `Ctrl+1` |
+| Sunucular (ana sayfa) | `⌘1` | `Ctrl+1` |
 | Sekmeler arası geçiş | `⌘2`…`⌘9` | `Ctrl+2`…`Ctrl+9` |
 | Yazıyı büyüt / küçült / sıfırla | `⌘+` / `⌘−` / `⌘0` | `Ctrl++` / `Ctrl+−` / `Ctrl+0` |
 | Öneriyi kabul et | `Tab` ya da `→` | `Tab` ya da `→` |

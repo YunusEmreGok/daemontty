@@ -629,7 +629,7 @@ function SecuritySettings({ encrypted, s, save }: { encrypted: boolean; s: Setti
       <div className={`security-banner ${encrypted ? 'ok' : 'bad'}`}>
         <Icon name="lock" size={20} />
         <div>
-          <strong>{encrypted ? 'Kasa şifreli' : 'Kasa şifresiz'}</strong>
+          <strong>{encrypted ? 'Veriler şifreli' : 'Veriler şifresiz'}</strong>
           <p>
             {encrypted
               ? 'Host bilgileri, parolalar ve anahtarlar işletim sisteminin anahtar zinciri ile şifrelenerek saklanıyor.'
@@ -660,7 +660,7 @@ function Shortcuts() {
     [[mac ? ['⌘', '⇧', 'B'] : ['Ctrl', 'Shift', 'B']], 'Tüm panellere yaz (aç/kapat)'],
     [[['Tab']], 'Öneriyi kabul et (liste açıkken)'],
     [[['→']], 'Soluk tamamlamayı kabul et'],
-    [[[mod, '1']], 'Kasa (ana sayfa)'],
+    [[[mod, '1']], 'Sunucular (ana sayfa)'],
     [[[mod, '2 … 9']], 'Açık sekmeler arasında geçiş'],
     [[[mod, '+'], [mod, '−']], 'Terminal yazısını büyüt / küçült'],
     [[[mod, '0']], 'Yazı boyutunu sıfırla'],

@@ -205,7 +205,7 @@ export default function App() {
         <div className={`tabbar ${isMac ? 'tabbar-mac' : ''}`}>
           <button className={`tab tab-home ${active === HOME ? 'active' : ''}`} onClick={() => setActive(HOME)} title="Daemontty Ana Sayfa">
             <DaemonttyLogo size={16} />
-            <span>Kasa</span>
+            <span>Sunucular</span>
           </button>
           <button className="palette-trigger" onClick={() => setPalette(true)} title="Komut paleti">
             <Icon name="search" size={13} />
@@ -268,7 +268,7 @@ export default function App() {
               ))}
               <div className={`sidebar-foot ${data.encrypted ? "" : "sidebar-foot-bad"}`}>
                 <Icon name="lock" size={13} />
-                <span>{data.encrypted ? 'Kasa şifreli' : 'Kasa şifresiz!'}</span>
+                <span>{data.encrypted ? 'Veriler şifreli' : 'Veriler şifresiz!'}</span>
               </div>
             </nav>
             <main className="main">
