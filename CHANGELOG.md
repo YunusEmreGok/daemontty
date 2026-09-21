@@ -5,6 +5,13 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 
 ## Yayınlanmamış
 
+### Eklendi
+- **Renksiz sunucular artık renkli.** Debian/Ubuntu'da root gibi renksiz gelen bash/zsh oturumlarında istem ve `ls`/`grep` çıktısı o oturum için renklendirilir. Sunucudaki dosyalara dokunulmaz; kendi renkli isteminiz (starship, oh-my-zsh…) varsa değiştirilmez. Ayarlar → Davranış'tan kapatılabilir.
+
+### İyileştirildi
+- Terminal çubuğu yenilendi: host'un renkli avatarı ve köşesinde durum ışığı, tek kapsülde toplanmış CPU/RAM/disk/yük ölçerleri, çerçevesiz düğmeler. "Bağlı" rozeti kalktı; rozet yalnızca bağlanırken ya da bağlantı yokken görünür.
+- Bağlantı kurulunca "bağlanılıyor…" adımları ekrandan silinir; oturum sunucunun karşılama metniyle temiz başlar. Bağlantı başarısız olursa adımlar yerinde kalır.
+
 ## [0.1.5] — 2026-09-21
 
 ### Eklendi

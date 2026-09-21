@@ -87,6 +87,10 @@ export function TerminalPane(p: Props) {
   const retryTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const everConnected = useRef(false)
   const ranInitial = useRef(false)
+  /** Ekrandaki soluk "bağlanılıyor…" satırlarının sayısı; sunucudan ilk veri gelince silinirler. */
+  const statusLines = useRef(0)
+  /** Yeniden bağlanma başarılı olunca sunucunun ilk çıktısından önce bir kez duyurulur. */
+  const announceReconnect = useRef(false)
 
   const ac = useAutocomplete({ termRef, wrapRef, sessionId: p.paneId, hostId: p.hostId, settings, snippets: data.snippets, theme })
 
@@ -120,6 +124,7 @@ export function TerminalPane(p: Props) {
     const term = termRef.current
     if (!term) return
     clearTimeout(retryTimer.current)
+    announceReconnect.current = !!connRef.current.retry
     setConn((c) => ({ status: 'connecting', retry: c.retry }))
     api.ssh.open(p.paneId, p.hostId, term.cols, term.rows)
   }
@@ -230,14 +235,25 @@ export function TerminalPane(p: Props) {
       cleanups.push(
         subscribeSession(p.paneId, {
           data: (d) => {
+            if (statusLines.current) {
+              // İmleci durum satırlarının başına al ve oradan aşağısını sil: oturum temiz başlasın.
+              term.write(`\x1b[${statusLines.current}A\r\x1b[J`)
+              statusLines.current = 0
+            }
+            if (announceReconnect.current) {
+              announceReconnect.current = false
+              term.write('\x1b[32m● Yeniden bağlandı\x1b[0m\r\n')
+            }
             term.write(d)
             ac.onOutput(d)
           },
           event: (ev) => {
             const { autoReconnect } = settingsRef.current
-            if (ev.type === 'status') term.write(`\x1b[2m${ev.message}\x1b[0m\r\n`)
+            if (ev.type === 'status') {
+              term.write(`\x1b[2m${ev.message}\x1b[0m\r\n`)
+              statusLines.current++
+            }
             else if (ev.type === 'ready') {
-              if (connRef.current.retry) term.write('\x1b[32m● Yeniden bağlandı\x1b[0m\r\n')
               everConnected.current = true
               const initial = props.current.initialCommand
               if (initial && !ranInitial.current) {
@@ -247,6 +263,7 @@ export function TerminalPane(p: Props) {
               setConn({ status: 'ready' })
               if (props.current.focused) term.focus()
             } else if (ev.type === 'error') {
+              statusLines.current = 0 // hata olduysa adımlar ekranda kalsın
               term.write(`\r\n\x1b[31m✖ ${ev.message}\x1b[0m\r\n`)
               const retrying = connRef.current.retry
               // Yeniden bağlanırken ağ hatası: sıradaki denemeye geç. Parola hatası vb.: dur.

@@ -9,6 +9,8 @@ import { DirListing, LOCAL_HOST_ID, ServerStats, SessionEvent } from '@shared/ty
 import { connect, Connection } from './connection'
 import { addHistory, clearHistory, getHistory, historyCount } from './vault'
 import { openSessionLog, SessionLog } from './sessionlog'
+import { colorize } from './colorize'
+import { getSettings } from './vault'
 
 interface Session {
   conn?: Connection
@@ -80,10 +82,13 @@ async function open(wc: WebContents, id: string, hostId: string, cols: number, r
 
     // Buffer olarak gönderiyoruz; UTF-8 karakterler (ş, ğ, ı…) parçalara bölünse bile xterm doğru birleştirir.
     session.log = openSessionLog(conn.host.label)
-    const onData = (d: Buffer): void => {
+    const deliver = (d: Buffer): void => {
       if (!wc.isDestroyed()) wc.send('ssh:data', id, d)
       session.log?.write(d)
     }
+    // Renklendirme satırının yankısını süzebilmek için veri bir ara katmandan geçer.
+    let route = deliver
+    const onData = (d: Buffer): void => route(d)
     stream.on('data', onData)
     stream.stderr.on('data', onData)
     // Kullanıcı "exit" yazdıysa kabuk çıkış kodu gönderir; bağlantı koparsa göndermez.
@@ -102,6 +107,8 @@ async function open(wc: WebContents, id: string, hostId: string, cols: number, r
       lastError = /keepalive/i.test(err.message) ? 'sunucu yanıt vermiyor' : err.message
     })
 
+    if (getSettings().colorizeShell) await colorize(conn, stream, deliver, (f) => (route = f)).catch(() => {})
+    if (session.closed) return
     emit(wc, id, { type: 'ready' })
     if (conn.host.startupCommand) stream.write(conn.host.startupCommand + '\n')
   } catch (err) {

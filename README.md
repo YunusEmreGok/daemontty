@@ -62,6 +62,7 @@ Daemontty adını buradan alır: bağlı olduğunuz sunucunun **systemd servisle
 - **Akıllı otomatik tamamlama:** komut geçmişinizden, snippet'lerinizden ve sunucudaki gerçek dosya yollarından öneri; yanlış yazılan komutlar için "bunu mu demek istediniz?".
 - **Otomatik yeniden bağlanma:** bağlantı koparsa artan aralıklarla dener, internet geri gelince beklemeden bağlanır.
 - **Canlı sunucu durumu:** terminal çubuğunda CPU, RAM, disk ve sistem yükü.
+- **Renksiz sunucuları renklendirir:** Debian/Ubuntu'da root gibi renksiz gelen bash/zsh oturumlarında istemi ve `ls`/`grep` çıktısını o oturum için renklendirir; sunucudaki dosyalara dokunmaz, kendi renkli isteminizi değiştirmez.
 - **Oturum kaydı:** isterseniz terminal çıktısı sunucu başına klasörlere düz metin olarak yazılır.
 - Sekmeleri sürükleyerek sıralama, sabitleme, çoğaltma.
 - Terminal içi arama, tıklanabilir bağlantılar, seçince kopyalama, tam UTF-8 / Türkçe karakter desteği.

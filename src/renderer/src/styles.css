@@ -1331,13 +1331,67 @@ input[type='range']::-webkit-slider-thumb {
   background: var(--term-bg);
 }
 .term-bar {
-  background: color-mix(in srgb, var(--term-bg) 92%, var(--term-fg));
-  border-bottom-color: color-mix(in srgb, var(--term-bg) 84%, var(--term-fg));
+  /* Terminalle tek yüzey: çubuk temanın zemininden yalnızca bir ton ayrışır. */
+  height: 46px;
+  gap: 10px;
+  padding: 0 10px 0 14px;
+  background: color-mix(in srgb, var(--term-bg) 96%, var(--term-fg));
+  border-bottom-color: color-mix(in srgb, var(--term-bg) 90%, var(--term-fg));
   color: var(--term-fg);
+}
+.term-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: rgba(0, 0, 0, 0.72);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+/* Durum ışığı: avatarın köşesinde, zemin renginde bir halkayla ayrılır */
+.term-avatar::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted);
+  border: 2px solid color-mix(in srgb, var(--term-bg) 96%, var(--term-fg));
+}
+.term-avatar.st-ready::after {
+  background: var(--ok);
+}
+.term-avatar.st-connecting::after {
+  background: var(--warn);
+  animation: pulse 1s infinite alternate;
+}
+.term-avatar.st-closed::after {
+  background: var(--danger);
+}
+.term-id {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.term-id strong {
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
 }
 .term-bar-sub {
   font: 11.5px var(--mono);
-  color: color-mix(in srgb, var(--term-fg) 55%, var(--term-bg));
+  color: color-mix(in srgb, var(--term-fg) 48%, var(--term-bg));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pill {
   font-size: 11px;
@@ -1361,19 +1415,24 @@ input[type='range']::-webkit-slider-thumb {
 .bar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
+  gap: 6px;
+  height: 30px;
   padding: 0 10px;
-  border-radius: 7px;
-  border: 1px solid color-mix(in srgb, var(--term-fg) 14%, transparent);
-  background: color-mix(in srgb, var(--term-fg) 5%, transparent);
-  color: var(--term-fg);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: color-mix(in srgb, var(--term-fg) 78%, var(--term-bg));
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 .bar-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--term-fg) 11%, transparent);
+  background: color-mix(in srgb, var(--term-fg) 9%, transparent);
+  color: var(--term-fg);
 }
 .bar-btn:disabled {
   opacity: 0.4;
@@ -1391,6 +1450,18 @@ input[type='range']::-webkit-slider-thumb {
   min-height: 0;
   position: relative;
   background: var(--term-bg);
+}
+.terminal-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 10px;
+  background: linear-gradient(rgba(0, 0, 0, 0.16), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.session-light .terminal-wrap::before {
+  background: linear-gradient(rgba(0, 0, 0, 0.06), transparent);
 }
 .terminal {
   width: 100%;
@@ -2580,10 +2651,11 @@ button.update-pill:hover {
 .stats {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-left: 10px;
-  padding-left: 12px;
-  border-left: 1px solid color-mix(in srgb, var(--term-fg) 14%, transparent);
+  height: 28px;
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--term-fg) 5%, transparent);
   font-size: 11px;
   color: color-mix(in srgb, var(--term-fg) 70%, var(--term-bg));
   white-space: nowrap;
@@ -2591,19 +2663,24 @@ button.update-pill:hover {
 .meter {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  padding: 0 9px;
+}
+.meter + .meter {
+  border-left: 1px solid color-mix(in srgb, var(--term-fg) 9%, transparent);
 }
 .meter b {
   font-weight: 600;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  opacity: 0.8;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
 }
 .meter-bar {
-  width: 34px;
-  height: 5px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--term-fg) 14%, transparent);
+  width: 30px;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--term-fg) 13%, transparent);
   overflow: hidden;
 }
 .meter-bar i {
@@ -2620,7 +2697,10 @@ button.update-pill:hover {
   background: var(--danger);
 }
 .meter-crit .meter-text {
-  color: var(--danger);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--term-fg) 88%, var(--term-bg));
 }
 .meter-text {
   font-family: var(--mono);

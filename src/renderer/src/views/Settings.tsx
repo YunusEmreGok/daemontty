@@ -450,6 +450,12 @@ function BehaviorSettings({ s, save }: { s: Settings; save(p: Partial<Settings>)
             desc="Terminal daha akıcı çizilir. Görüntü bozulması olursa kapatın."
           />
           <Toggle
+            checked={s.colorizeShell}
+            onChange={(v) => save({ colorizeShell: v })}
+            title="Renksiz sunucuları renklendir"
+            desc="Debian/Ubuntu'da root gibi renksiz gelen bash/zsh oturumlarında istemi ve ls/grep çıktısını renklendirir. Yalnızca o oturum için geçerlidir; sunucudaki dosyalara dokunmaz, kendi renkli isteminiz varsa onu değiştirmez."
+          />
+          <Toggle
             checked={s.sessionLog}
             onChange={(v) => save({ sessionLog: v })}
             title="Oturumları dosyaya kaydet"

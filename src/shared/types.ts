@@ -135,6 +135,8 @@ export interface Settings {
   gpuRendering: boolean
   /** Ana parola varken: bilgisayar bu kadar dakika boşta kalınca kilitle (0: yalnızca açılışta ve ekran kilitlenince). */
   lockAfterMinutes: number
+  /** Renksiz gelen bash/zsh oturumlarında istemi ve ls/grep çıktısını o oturum için renklendir. */
+  colorizeShell: boolean
   /** Terminal çıktısını düz metin olarak diske kaydet. */
   sessionLog: boolean
   /** Sabitlenmiş sekmeler; uygulama açılınca yeniden açılır. */
@@ -213,6 +215,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoReconnect: true,
   showServerStats: true,
   sessionLog: false,
+  colorizeShell: true,
   lockAfterMinutes: 5,
   pinnedTabs: []
 }

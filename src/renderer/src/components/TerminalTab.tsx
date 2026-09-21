@@ -115,12 +115,19 @@ export function TerminalTab({ tab, visible, onClose }: { tab: Tab; visible: bool
       style={{ ['--term-bg' as string]: theme.background, ['--term-fg' as string]: theme.foreground }}
     >
       <div className="session-bar term-bar">
-        <span className={`dot dot-${state}`} />
-        <strong>{host?.label ?? tab.title}</strong>
-        <span className="term-bar-sub">
-          {host ? `${host.username ? host.username + '@' : ''}${host.address}${host.port !== 22 ? ':' + host.port : ''}` : ''}
+        <span className={`term-avatar st-${state}`} style={{ background: colorFor(focused.hostId) }} title={stateLabel}>
+          {host ? host.label.slice(0, 2).toLocaleUpperCase('tr') : <Icon name="terminal" size={12} />}
         </span>
-        <span className={`pill pill-${state}`}>{stateLabel}</span>
+        <div className="term-id">
+          <strong>{host?.label ?? tab.title}</strong>
+          {host && (
+            <span className="term-bar-sub">
+              {`${host.username ? host.username + '@' : ''}${host.address}${host.port !== 22 ? ':' + host.port : ''}`}
+            </span>
+          )}
+        </div>
+        {/* Bağlıyken avatardaki yeşil ışık yeter; rozet yalnızca dikkat gerektiren durumda görünür. */}
+        {state !== 'ready' && <span className={`pill pill-${state}`}>{stateLabel}</span>}
         {stats && <StatsBar s={stats} />}
         <div className="spacer" />
 
