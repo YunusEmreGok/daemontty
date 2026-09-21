@@ -22,7 +22,12 @@ jobs:
       - name: Etiket package.json sürümüyle aynı mı
         run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
       # Paralel derlemeler aynı sürüme yüklesin diye sürümü önce oluştur.
-      - run: gh release view "$GITHUB_REF_NAME" || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+      # Sürüm sayfasının metni CHANGELOG.md'deki o sürümün bölümünden gelir; uygulama içindeki
+      # "yeni sürüm var" penceresi de bu metni gösterir.
+      - run: |
+          node scripts/surum-notu.cjs notlar "$GITHUB_REF_NAME" > notlar.md
+          [ -s notlar.md ] || echo "Ayrıntılar için CHANGELOG.md dosyasına bakın." > notlar.md
+          gh release view "$GITHUB_REF_NAME" || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notlar.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -15,7 +15,8 @@
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:win": "electron-vite build && electron-builder --win --x64 -c.npmRebuild=false",
     "dist:linux": "electron-vite build && electron-builder --linux",
-    "release": "npm version patch && git push --follow-tags"
+    "release": "npm version patch && git push --follow-tags",
+    "version": "node scripts/surum-notu.cjs && git add CHANGELOG.md"
   },
   "license": "MIT",
   "type": "commonjs",

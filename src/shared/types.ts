@@ -327,7 +327,7 @@ export interface LockState {
 export type UpdateState =
   | { status: 'idle' | 'checking' | 'current' }
   /** Yeni sürüm var; kullanıcı isteyene kadar indirilmez. manual: bu platformda elle kurulur (imzasız macOS, deb) */
-  | { status: 'available'; version: string; manual: boolean }
+  | { status: 'available'; version: string; manual: boolean; /** Sürüm notları (CHANGELOG'dan, düz metin) */ notes?: string }
   | { status: 'downloading'; version: string; percent: number }
   /** İndirildi; yeniden başlatınca ya da çıkışta kurulur */
   | { status: 'ready'; version: string }

@@ -865,6 +865,10 @@ function AboutSettings() {
                 </button>
               )}
               <span className={`small ${update.status === 'error' ? 'text-danger' : 'muted'}`}>{updateText}</span>
+              <div className="spacer" />
+              <button className="btn btn-sm" onClick={() => window.open('https://github.com/YunusEmreGok/daemontty/blob/main/CHANGELOG.md')}>
+                Yenilikler
+              </button>
             </div>
           </div>
         </div>

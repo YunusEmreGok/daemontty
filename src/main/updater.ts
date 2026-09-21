@@ -103,6 +103,24 @@ function macSwapOnExit(relaunch: boolean): void {
   macStaged = null
 }
 
+/** GitHub sürüm sayfasının HTML'ini pencerede gösterilecek düz metne çevirir. */
+function plainNotes(info: UpdateInfo): string | undefined {
+  const raw = Array.isArray(info.releaseNotes) ? info.releaseNotes.map((n) => n.note ?? '').join('\n') : (info.releaseNotes ?? '')
+  const text = raw
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<\/(li|p|h\d|ul|div)>|<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+  if (!text) return undefined
+  return text.length > 900 ? text.slice(0, 900).replace(/\s+\S*$/, '') + '…' : text
+}
+
 function download(): void {
   if (state.status !== 'available' || !found) return
   const info = found
@@ -144,7 +162,7 @@ export function registerUpdateIpc(): void {
   autoUpdater.on('update-not-available', () => setState({ status: 'current' }))
   autoUpdater.on('update-available', (info) => {
     found = info
-    setState({ status: 'available', version: info.version, manual: !canInstall(info) })
+    setState({ status: 'available', version: info.version, manual: !canInstall(info), notes: plainNotes(info) })
   })
   autoUpdater.on('download-progress', (p) => {
     if (state.status === 'downloading') setState({ ...state, percent: Math.round(p.percent) })
@@ -162,7 +180,8 @@ export function registerUpdateIpc(): void {
 
   // Geliştirmede arayüzü denemek için: DAEMONTTY_FAKE_UPDATE=9.9.9 npm run dev
   const fake = !app.isPackaged && process.env.DAEMONTTY_FAKE_UPDATE
-  if (fake) setTimeout(() => setState({ status: 'available', version: fake, manual: true }), 1500)
+  if (fake)
+    setTimeout(() => setState({ status: 'available', version: fake, manual: true, notes: 'Eklendi\n• Örnek yenilik bir\n• Örnek yenilik iki\n\nDüzeltildi\n• Örnek düzeltme' }), 1500)
 
   if (app.isPackaged) {
     setTimeout(check, FIRST_CHECK_MS)

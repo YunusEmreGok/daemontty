@@ -43,7 +43,7 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 > ```
 > Windows'ta SmartScreen uyarısı çıkarsa **Ek bilgi → Yine de çalıştır**.
 
-**Güncellemeler.** Uygulama hiçbir şeyi kendiliğinden indirmez. Yeni sürüm çıkınca sorar; "şimdi değil" derseniz üst çubukta **Yeni sürüm mevcut** düğmesi kalır. Onay verdiğinizde güncelleme indirilir, sha512 özetiyle doğrulanır ve yeniden başlatırken kurulur (macOS, Windows ve Linux AppImage). Yalnızca `.deb` kurulumunda indirme sayfası açılır. İstediğiniz an **Ayarlar → Hakkında → Güncellemeleri denetle**.
+**Güncellemeler.** Uygulama hiçbir şeyi kendiliğinden indirmez. Yeni sürüm çıkınca sorar; "şimdi değil" derseniz üst çubukta **Yeni sürüm mevcut** düğmesi kalır. Onay verdiğinizde güncelleme indirilir, sha512 özetiyle doğrulanır ve yeniden başlatırken kurulur (macOS, Windows ve Linux AppImage). Yalnızca `.deb` kurulumunda indirme sayfası açılır. İstediğiniz an **Ayarlar → Hakkında → Güncellemeleri denetle**. Her sürümde nelerin değiştiği: [CHANGELOG.md](CHANGELOG.md).
 
 ## Özellikler
 
@@ -172,7 +172,7 @@ Electron · React 19 · TypeScript · xterm.js · ssh2 · node-pty · electron-v
 npm run release
 ```
 
-Sürüm numarasını artırır ve `v*` etiketini gönderir. GitHub Actions üç platformu derleyip [Releases](https://github.com/YunusEmreGok/daemontty/releases)'a yükler; kurulu uygulamalar bir sonraki denetimde yeni sürümü görür.
+Önce [CHANGELOG.md](CHANGELOG.md) içindeki **Yayınlanmamış** bölümüne bu sürümde değişenleri yazın; bölüm boşsa komut durur. Komut o bölümü yeni sürüm numarası ve tarihle başlıklandırır, sürüm numarasını artırır ve `v*` etiketini gönderir. Aynı metin GitHub sürüm sayfasına ve uygulamadaki "yeni sürüm var" penceresine de yansır. GitHub Actions üç platformu derleyip [Releases](https://github.com/YunusEmreGok/daemontty/releases)'a yükler; kurulu uygulamalar bir sonraki denetimde yeni sürümü görür.
 
 ## Katkı
 

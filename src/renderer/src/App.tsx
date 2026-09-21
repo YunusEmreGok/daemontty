@@ -80,8 +80,9 @@ export default function App() {
       // Hayır denirse üst çubuktaki "Yeni sürüm mevcut" düğmesi kalır.
       ui.confirm(
         `Yeni sürüm var: Daemontty ${update.version}`,
-        update.manual ? 'Bu platformda güncelleme elle kurulur. İndirme sayfası açılsın mı?' : 'Şimdi indirilsin mi? Açık oturumlarınız indirme sırasında etkilenmez.',
-        { confirmLabel: update.manual ? 'İndirme sayfasını aç' : 'Güncelle' }
+        (update.notes ? update.notes + '\n\n' : '') +
+          (update.manual ? 'Bu platformda güncelleme elle kurulur. İndirme sayfası açılsın mı?' : 'Şimdi indirilsin mi? Açık oturumlarınız indirme sırasında etkilenmez.'),
+        { confirmLabel: update.manual ? 'İndirme sayfasını aç' : 'Güncelle', cancelLabel: 'Şimdi değil' }
       ).then((ok) => ok && api.update.download())
     }
   }, [update, ui])
