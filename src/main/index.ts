@@ -12,6 +12,8 @@ import { registerBackupIpc } from './backup'
 import { registerProbeIpc } from './probe'
 import { registerUpdateIpc } from './updater'
 import { registerSessionLogIpc } from './sessionlog'
+import { installLockGate, lockNow, registerLockIpc } from './lock'
+import { isSealed } from './vault'
 import './prompt'
 
 app.setName('Daemontty')
@@ -127,6 +129,7 @@ function buildMenu(): void {
       submenu: [
         { role: 'minimize', label: 'Küçült' },
         { role: 'zoom', label: 'Yakınlaştır' },
+        { label: 'Şimdi Kilitle', accelerator: 'CmdOrCtrl+Shift+L', click: () => lockNow() },
         ...(isMac ? [] : [{ role: 'close' as const, label: 'Kapat' }])
       ]
     }
@@ -153,6 +156,8 @@ app.whenReady().then(() => {
     )
   }
   buildMenu()
+  installLockGate() // diğer IPC kayıtlarından önce
+  registerLockIpc(startAutoForwards)
   registerVaultIpc()
   registerTerminalIpc()
   registerSftpIpc()
@@ -171,7 +176,7 @@ app.whenReady().then(() => {
     }
   }
   createWindow()
-  startAutoForwards()
+  if (!isSealed()) startAutoForwards() // kasa parola bekliyorsa kilit açılınca başlar
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

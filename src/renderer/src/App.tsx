@@ -14,6 +14,7 @@ import { SettingsView } from './views/Settings'
 import { CommandPalette, View } from './components/CommandPalette'
 import { useUi } from './components/Ui'
 import { useUpdateState } from './update'
+import { lockFlag } from './lock'
 
 export interface Tab {
   id: string
@@ -196,7 +197,7 @@ export default function App() {
   // Ctrl/Cmd+1..9 ile sekmeler arasında geçiş
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if (!(isMac ? e.metaKey : e.ctrlKey) || e.altKey) return
+      if (lockFlag.locked || !(isMac ? e.metaKey : e.ctrlKey) || e.altKey) return
       // Komut paleti: Cmd+K (macOS) / Ctrl+Shift+K (Ctrl+K kabukta satır silme kısayolu olduğu için)
       if (e.code === 'KeyK' && (isMac || e.shiftKey)) {
         e.preventDefault()

@@ -96,6 +96,16 @@ const api: Api = {
     statuses: () => invoke('forward:statuses'),
     onStatus: (cb) => on('forward:status', cb)
   },
+  lock: {
+    state: () => invoke('lock:state'),
+    unlock: (pw) => invoke('lock:unlock', pw),
+    touchId: () => invoke('lock:touchId'),
+    now: () => send('lock:now'),
+    setPassword: (next, current) => invoke('lock:setPassword', next, current),
+    disable: (current) => invoke('lock:disable', current),
+    setTouchId: (on, current) => invoke('lock:setTouchId', on, current),
+    onChange: (cb) => on('lock:changed', cb)
+  },
   logs: {
     openDir: () => invoke('logs:openDir')
   },

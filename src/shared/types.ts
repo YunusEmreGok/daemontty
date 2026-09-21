@@ -130,6 +130,8 @@ export interface Settings {
   useSystemKeys: boolean
   /** Terminali GPU (WebGL) ile çiz; kapalıysa DOM ile çizilir. */
   gpuRendering: boolean
+  /** Ana parola varken: bilgisayar bu kadar dakika boşta kalınca kilitle (0: yalnızca açılışta ve ekran kilitlenince). */
+  lockAfterMinutes: number
   /** Terminal çıktısını düz metin olarak diske kaydet. */
   sessionLog: boolean
   /** Sabitlenmiş sekmeler; uygulama açılınca yeniden açılır. */
@@ -208,6 +210,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoReconnect: true,
   showServerStats: true,
   sessionLog: false,
+  lockAfterMinutes: 5,
   pinnedTabs: []
 }
 
@@ -277,6 +280,15 @@ export type SessionEvent =
   | { type: 'ready' }
   | { type: 'closed'; reason: 'exit' | 'lost'; message?: string }
   | { type: 'error'; message: string; retryable?: boolean }
+
+export interface LockState {
+  /** Ana parola belirlenmiş mi */
+  enabled: boolean
+  locked: boolean
+  touchIdAvailable: boolean
+  /** Touch ID ile açma etkin mi */
+  touchId: boolean
+}
 
 /** preload tarafından window.api olarak açılan arayüz. */
 /** Uygulama güncellemesinin durumu (GitHub Releases) */
@@ -383,6 +395,17 @@ export interface Api {
     stop(id: string): Promise<void>
     statuses(): Promise<ForwardStatus[]>
     onStatus(cb: (s: ForwardStatus) => void): () => void
+  }
+  lock: {
+    state(): Promise<LockState>
+    unlock(password: string): Promise<boolean>
+    touchId(): Promise<boolean>
+    now(): void
+    /** Ana parolayı koyar ya da değiştirir (değiştirirken mevcut parola gerekir). */
+    setPassword(next: string, current: string | null): Promise<void>
+    disable(current: string): Promise<void>
+    setTouchId(on: boolean, current: string): Promise<void>
+    onChange(cb: (s: LockState) => void): () => void
   }
   logs: {
     /** Oturum kayıtlarının tutulduğu klasörü dosya yöneticisinde açar. */

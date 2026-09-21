@@ -1,5 +1,5 @@
 import { app, safeStorage } from 'electron'
-import { randomUUID } from 'crypto'
+import { createCipheriv, createDecipheriv, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import {
@@ -47,7 +47,17 @@ const EMPTY: StoredVault = {
 // Şifreli dosyanın başına konan işaret; düz JSON'dan ayırt etmek için.
 const MAGIC = Buffer.from('KBK1')
 
+// Ana parola konmuşsa dosya bir de paroladan türetilen anahtarla sarılır:
+// KBK2 | salt(16) | iv(12) | etiket(16) | AES-256-GCM(iç veri). İç veri eski biçimdir (KBK1… ya da düz JSON).
+const MAGIC2 = Buffer.from('KBK2')
+const SCRYPT = { N: 1 << 15, r: 8, p: 1, maxmem: 128 * 1024 * 1024 }
+
 let vault: StoredVault = structuredClone(EMPTY)
+/** Ana parola anahtarı; kilit açıkken bellekte tutulur (kaydetmek için gerekir). */
+let masterKey: Buffer | null = null
+let masterSalt: Buffer | null = null
+/** Parola girilene kadar çözülemeyen kasa dosyası. Doluyken diske ASLA yazılmaz (üzerine boş kasa yazmamak için). */
+let sealed: Buffer | null = null
 let listeners: Array<(d: VaultData) => void> = []
 
 function vaultPath(): string {
@@ -62,6 +72,14 @@ export function loadVault(): void {
   const file = vaultPath()
   if (!fs.existsSync(file)) return
   const raw = fs.readFileSync(file)
+  if (raw.subarray(0, MAGIC2.length).equals(MAGIC2)) {
+    sealed = raw
+    return
+  }
+  parseVault(raw, file)
+}
+
+function parseVault(raw: Buffer, file: string): void {
   let parsed: Partial<StoredVault>
   try {
     const json = raw.subarray(0, MAGIC.length).equals(MAGIC)
@@ -81,11 +99,69 @@ export function loadVault(): void {
   }
 }
 
+const deriveKey = (password: string, salt: Buffer): Buffer => scryptSync(password.normalize('NFKC'), salt, 32, SCRYPT)
+
+function seal(inner: Buffer): Buffer {
+  const iv = randomBytes(12)
+  const c = createCipheriv('aes-256-gcm', masterKey!, iv)
+  const body = Buffer.concat([c.update(inner), c.final()])
+  return Buffer.concat([MAGIC2, masterSalt!, iv, c.getAuthTag(), body])
+}
+
+/** Kasa parola bekliyor mu (uygulama yeni açıldı, henüz çözülmedi)? */
+export const isSealed = (): boolean => sealed !== null
+export const hasMasterPassword = (): boolean => sealed !== null || masterKey !== null
+
+/** Parola doğruysa anahtarı döndürür. Kasa mühürlüyse çözmeyi dener, değilse bellekteki anahtarla karşılaştırır. */
+export function checkMasterPassword(password: string): Buffer | null {
+  const salt = sealed ? sealed.subarray(4, 20) : masterSalt
+  if (!salt) return null
+  const key = deriveKey(password, salt)
+  if (!sealed) return masterKey && timingSafeEqual(key, masterKey) ? key : null
+  return unsealWithKey(key) ? key : null
+}
+
+/** Mühürlü kasayı verilen anahtarla açar (parola ya da Touch ID ile saklanan anahtar). */
+export function unsealWithKey(key: Buffer): boolean {
+  if (!sealed) return !!masterKey && key.length === masterKey.length && timingSafeEqual(key, masterKey)
+  const raw = sealed
+  let inner: Buffer
+  try {
+    const d = createDecipheriv('aes-256-gcm', key, raw.subarray(20, 32))
+    d.setAuthTag(raw.subarray(32, 48))
+    inner = Buffer.concat([d.update(raw.subarray(48)), d.final()])
+  } catch {
+    return false // yanlış parola
+  }
+  parseVault(inner, vaultPath())
+  masterKey = key
+  masterSalt = Buffer.from(raw.subarray(4, 20))
+  sealed = null
+  const pub = publicView()
+  listeners.forEach((l) => l(pub))
+  return true
+}
+
+/** Ana parolayı koyar/değiştirir; null ile kaldırır. Kasa açıkken çağrılır. Yeni anahtarı döndürür. */
+export function setMasterPassword(password: string | null): Buffer | null {
+  if (sealed) throw new Error('Önce kilidi açın')
+  if (password === null) {
+    masterKey = masterSalt = null
+  } else {
+    masterSalt = randomBytes(16)
+    masterKey = deriveKey(password, masterSalt)
+  }
+  persist(false)
+  return masterKey
+}
+
 function persist(broadcast = true): void {
+  if (sealed) return
   const json = JSON.stringify(vault)
-  const data = canEncrypt()
+  const inner = canEncrypt()
     ? Buffer.concat([MAGIC, safeStorage.encryptString(json)])
     : Buffer.from(json, 'utf8')
+  const data = masterKey ? seal(inner) : inner
   const file = vaultPath()
   fs.mkdirSync(path.dirname(file), { recursive: true })
   // Yarım yazılmış dosya kalmasın diye önce geçici dosyaya yaz.

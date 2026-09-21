@@ -7,6 +7,7 @@ import { DaemonttyLogo } from '../components/DaemonttyLogo'
 import { TerminalPreview } from '../components/TerminalPreview'
 import { Drawer, Field, useUi } from '../components/Ui'
 import { useUpdateState } from '../update'
+import { useLockState } from '../lock'
 import { allThemes, COLOR_KEYS, findTheme, FONT_CHOICES, fontStack, isBuiltin, primaryFont } from '../themes'
 
 type Section = 'look' | 'behavior' | 'security' | 'backup' | 'keys' | 'about'
@@ -600,6 +601,107 @@ function BackupSettings() {
   )
 }
 
+const LOCK_MINUTES: Array<[number, string]> = [
+  [0, 'Yalnızca açılışta ve ekran kilitlenince'],
+  [1, '1 dakika boşta kalınca'],
+  [5, '5 dakika boşta kalınca'],
+  [15, '15 dakika boşta kalınca'],
+  [30, '30 dakika boşta kalınca'],
+  [60, '1 saat boşta kalınca']
+]
+
+function AppLockCard({ s, save }: { s: Settings; save(p: Partial<Settings>): void }) {
+  const ui = useUi()
+  const lock = useLockState()
+  if (!lock) return null
+
+  const run = async (fn: () => Promise<void>, done: string): Promise<void> => {
+    try {
+      await fn()
+      ui.toast(done, 'success')
+    } catch (e) {
+      ui.toast(errMsg(e), 'error')
+    }
+  }
+
+  const setPassword = async (): Promise<void> => {
+    const fields = [
+      ...(lock.enabled ? [{ label: 'Mevcut parola', secret: true }] : []),
+      { label: 'Yeni ana parola (en az 6 karakter)', secret: true },
+      { label: 'Yeni ana parola (tekrar)', secret: true }
+    ]
+    const v = await ui.form(lock.enabled ? 'Ana parolayı değiştir' : 'Ana parola belirle', fields, {
+      message: 'Bu parola verilerinizi diskte şifreler. Unutursanız verileriniz KURTARILAMAZ; önce Yedekleme bölümünden şifreli yedek almanız önerilir.',
+      confirmLabel: 'Kaydet'
+    })
+    if (!v) return
+    const [current, next, again] = lock.enabled ? v : [null, v[0], v[1]]
+    if (next !== again) return ui.toast('Parolalar eşleşmiyor', 'error')
+    await run(() => api.lock.setPassword(next, current), lock.enabled ? 'Ana parola değiştirildi' : 'Uygulama kilidi açıldı')
+  }
+
+  const askCurrent = async (title: string, message?: string): Promise<string | null> =>
+    (await ui.form(title, [{ label: 'Ana parola', secret: true }], { message, confirmLabel: 'Devam' }))?.[0] ?? null
+
+  const disable = async (): Promise<void> => {
+    const pw = await askCurrent('Uygulama kilidini kaldır', 'Veriler yine işletim sisteminin anahtar zinciriyle şifreli kalır, ancak uygulama parola sormaz.')
+    if (pw) await run(() => api.lock.disable(pw), 'Uygulama kilidi kaldırıldı')
+  }
+
+  const toggleTouchId = async (on: boolean): Promise<void> => {
+    const pw = await askCurrent(on ? 'Touch ID ile açmayı etkinleştir' : 'Touch ID ile açmayı kapat')
+    if (pw) await run(() => api.lock.setTouchId(on, pw), on ? 'Touch ID etkin' : 'Touch ID kapatıldı')
+  }
+
+  return (
+    <section className="card">
+      <h2>Uygulama kilidi</h2>
+      {!lock.enabled ? (
+        <div className="form narrow">
+          <p className="muted">
+            Ana parola belirlerseniz Daemontty açılışta ve boşta kalınca parola sorar; verileriniz diskte bu parolayla da şifrelenir. Bilgisayarınızı açık
+            bulan biri sunucularınıza giremez.
+          </p>
+          <button type="button" className="btn btn-primary" onClick={setPassword}>
+            <Icon name="lock" /> Ana parola belirle
+          </button>
+        </div>
+      ) : (
+        <div className="form narrow">
+          <Field label="Otomatik kilitle">
+            <select value={s.lockAfterMinutes} onChange={(e) => save({ lockAfterMinutes: Number(e.target.value) })}>
+              {LOCK_MINUTES.map(([m, label]) => (
+                <option key={m} value={m}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {lock.touchIdAvailable && (
+            <Toggle
+              checked={lock.touchId}
+              onChange={toggleTouchId}
+              title="Touch ID ile aç"
+              desc="Kilit anahtarı macOS Anahtar Zinciri'nde saklanır ve parmak izinizle açılır."
+            />
+          )}
+          <div className="row">
+            <button type="button" className="btn" onClick={() => api.lock.now()}>
+              <Icon name="lock" /> Şimdi kilitle
+            </button>
+            <button type="button" className="btn" onClick={setPassword}>
+              Parolayı değiştir
+            </button>
+            <button type="button" className="btn btn-danger" onClick={disable}>
+              Kilidi kaldır
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function Toggle(props: { checked: boolean; onChange(v: boolean): void; title: string; desc?: string; disabled?: boolean }) {
   return (
     <label className={`toggle-row ${props.disabled ? 'disabled' : ''}`}>
@@ -633,6 +735,7 @@ function SecuritySettings({ encrypted, s, save }: { encrypted: boolean; s: Setti
         />
       </div>
     </section>
+    <AppLockCard s={s} save={save} />
     <section className="card">
       <h2>Güvenlik</h2>
       <div className={`security-banner ${encrypted ? 'ok' : 'bad'}`}>

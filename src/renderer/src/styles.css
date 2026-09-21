@@ -2863,3 +2863,48 @@ button.update-pill:hover {
   padding: 24px;
   text-align: center;
 }
+
+/* Uygulama kilidi */
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  -webkit-app-region: drag;
+}
+.lock-card {
+  -webkit-app-region: no-drag;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.lock-card h2 {
+  margin: 6px 0 0;
+}
+.lock-card input,
+.lock-card .btn {
+  width: 100%;
+  justify-content: center;
+}
+.lock-card input {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--panel);
+  color: var(--text);
+  text-align: center;
+  font-size: 15px;
+}
+.lock-card input:focus {
+  outline: 0;
+  border-color: var(--accent-line);
+}
+.lock-card .lock-input-err {
+  border-color: var(--danger);
+}

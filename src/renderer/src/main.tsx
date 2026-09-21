@@ -8,9 +8,12 @@ import '@fontsource/fira-code/700.css'
 import './styles.css'
 import App from './App'
 import { UiProvider } from './components/Ui'
+import { LockGate } from './lock'
 
 createRoot(document.getElementById('root')!).render(
   <UiProvider>
-    <App />
+    <LockGate>
+      <App />
+    </LockGate>
   </UiProvider>
 )
