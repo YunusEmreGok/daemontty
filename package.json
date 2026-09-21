@@ -1,6 +1,6 @@
 {
   "name": "daemontty",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Daemontty - Arka plan servislerini ve sunucu yönetimini odağa alan modern SSH & Terminal istemcisi",
   "author": {
     "name": "Yunus Emre Gök",
