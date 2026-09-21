@@ -87,8 +87,8 @@ Son sürümü [Releases sayfasından](https://github.com/YunusEmreGok/daemontty/
 ## Güvenlik
 
 - **Hesap yok, bulut yok, telemetri yok.** Uygulama yalnızca sizin sunucularınıza ve güncelleme denetimi için GitHub'a bağlanır.
-- Kasa, işletim sisteminin güvenli deposuyla şifrelenir: macOS Anahtar Zinciri, Windows DPAPI, Linux'ta libsecret / KWallet.
-- **Şifreli yedek:** kasanızı bir parolayla dışa aktarın (scrypt + AES-256-GCM), başka bir bilgisayarda birleştirerek ya da değiştirerek geri yükleyin.
+- Kayıtlı verileriniz işletim sisteminin güvenli deposuyla şifrelenir: macOS Anahtar Zinciri, Windows DPAPI, Linux'ta libsecret / KWallet.
+- **Şifreli yedek:** verilerinizi bir parolayla dışa aktarın (scrypt + AES-256-GCM), başka bir bilgisayarda birleştirerek ya da değiştirerek geri yükleyin.
 - Arayüz süreci korumalı alanda çalışır (`sandbox`, `contextIsolation`); Node.js erişimi yoktur.
 - Parolalar ekrana yansımadığı için otomatik tamamlama ve komut geçmişi onları hiçbir zaman görmez. Geçmiş kaydı ayarlardan tamamen kapatılabilir.
 
@@ -130,7 +130,7 @@ npm run dist:win     # NSIS kurulum dosyası
 npm run dist:linux   # AppImage + .deb
 ```
 
-Kendi kasanıza dokunmadan denemek için ayrı bir veri klasörü verin:
+Kendi verilerinize dokunmadan denemek için ayrı bir veri klasörü verin:
 
 ```sh
 DAEMONTTY_USER_DATA=/tmp/daemontty-test npm run dev
@@ -140,7 +140,7 @@ DAEMONTTY_USER_DATA=/tmp/daemontty-test npm run dev
 
 ```
 src/
-├── main/        Electron ana süreci: SSH (ssh2), SFTP, tüneller, kasa, güncelleme
+├── main/        Electron ana süreci: SSH (ssh2), SFTP, tüneller, şifreli depolama, güncelleme
 ├── preload/     Arayüze açılan güvenli, tipli API köprüsü
 ├── renderer/    React 19 arayüzü, xterm.js terminal, otomatik tamamlama
 └── shared/      Ana süreç ile arayüzün ortak tipleri
